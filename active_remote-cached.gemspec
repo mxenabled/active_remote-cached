@@ -8,12 +8,18 @@ Gem::Specification.new do |gem|
   gem.version       = ActiveRemote::Cached::VERSION
   gem.authors       = ["Brandon Dewitt"]
   gem.email         = ["brandonsdewitt@gmail.com"]
-  gem.description   = %q{TODO: Write a gem description}
-  gem.summary       = %q{TODO: Write a gem summary}
+  gem.description   = %q{ Provides "cached" finders and a DSL to enumerate which finders should have cached versions }
+  gem.summary       = %q{ Provides a configuration for caching mechanisms and finders on ActiveRemote models that are cached/cacheable }
   gem.homepage      = ""
 
   gem.files         = `git ls-files`.split($/)
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
   gem.require_paths = ["lib"]
+
+  gem.add_dependency "active_remote"
+
+  gem.add_development_dependency "bundler"
+  gem.add_development_dependency "pry"
+  gem.add_development_dependency "rake"
 end
