@@ -18,6 +18,9 @@ Gem::Specification.new do |gem|
   gem.require_paths = ["lib"]
 
   gem.add_dependency "active_remote"
+  gem.add_dependency "activesupport"
+  gem.add_dependency "darryl_jenks"
+  gem.add_dependency "heredity"
 
   gem.add_development_dependency "bundler"
   gem.add_development_dependency "pry"
