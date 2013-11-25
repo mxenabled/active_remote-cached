@@ -44,8 +44,18 @@ module ActiveRemote
         # and define each finder/searcher
         #
         cached_finder_key_set.permutation do |arguments|
+          delete_method_name = _cached_delete_method_name(arguments)
+          exist_method_name = _cached_exist_method_name(arguments)
           find_method_name = _cached_find_method_name(arguments)
           search_method_name = _cached_search_method_name(arguments)
+
+          unless self.respond_to?(delete_method_name)
+            _define_cached_delete_method(delete_method_name, arguments)
+          end
+
+          unless self.respond_to?(exist_method_name)
+            _define_cached_exist_method(exist_method_name, arguments)
+          end
 
           unless self.respond_to?(find_method_name)
             _define_cached_find_method(find_method_name, arguments)
@@ -57,12 +67,59 @@ module ActiveRemote
         end
       end
 
+      def _cached_delete_method_name(arguments)
+        "cached_delete_by_#{arguments.join('_and_')}"
+      end
+
+      def _cached_exist_method_name(arguments)
+        "cached_exist_by_#{arguments.join('_and_')}"
+      end
+
       def _cached_find_method_name(arguments)
         "cached_find_by_#{arguments.join('_and_')}"
       end
 
       def _cached_search_method_name(arguments)
         "cached_search_by_#{arguments.join('_and_')}"
+      end
+
+      def _define_cached_delete_method(method_name, *method_arguments)
+        method_arguments.flatten!
+        expanded_method_args = method_arguments.join(",")
+        sorted_method_args = method_arguments.sort.join(",")
+
+        self.class_eval <<-RUBY, __FILE__, __LINE__ + 1
+          # def self.cached_delete_by_user_guid(user_guid, options = {})
+          #   ::ActiveRemote::Cached.cache.delete([name, user_guid])
+          # end
+          def self.#{method_name}(#{expanded_method_args}, options = {})
+            ::ActiveRemote::Cached.cache.delete([name, #{sorted_method_args}])
+          end
+        RUBY
+      end
+
+      def _define_cached_exist_method(method_name, *method_arguments)
+        method_arguments.flatten!
+        expanded_method_args = method_arguments.join(",")
+        sorted_method_args = method_arguments.sort.join(",")
+
+        self.class_eval <<-RUBY, __FILE__, __LINE__ + 1
+          # def self.cached_exist_by_user_guid(user_guid, options = {})
+          #   ::ActiveRemote::Cached.cache.exist?([name, user_guid])
+          # end
+          def self.#{method_name}(#{expanded_method_args}, options = {})
+            ::ActiveRemote::Cached.cache.exist?([name, #{sorted_method_args}])
+          end
+        RUBY
+
+        self.class_eval <<-RUBY, __FILE__, __LINE__ + 1
+          # def self.cached_exist_by_user_guid?(user_guid, options = {})
+          #   ::ActiveRemote::Cached.cache.exist?([name, user_guid])
+          # end
+          def self.#{method_name}?(#{expanded_method_args}, options = {})
+            ::ActiveRemote::Cached.cache.exist?([name, #{sorted_method_args}])
+          end
+        RUBY
       end
 
       def _define_cached_find_method(method_name, *method_arguments)
