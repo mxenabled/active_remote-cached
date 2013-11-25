@@ -33,6 +33,10 @@ module ActiveRemote
         end
       end
 
+      def cached_finders(*keys)
+        cached_finders_for(*keys)
+      end
+
       ##
       # Underscored Methods
       #
