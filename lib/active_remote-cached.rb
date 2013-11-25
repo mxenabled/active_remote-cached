@@ -9,10 +9,10 @@ module ActiveRemote
 
     def self.cache(cache_provider = nil)
       if cache_provider
-        @cache = ::ActiveRemote::Cached::Cache.new(cache_provider)
+        @cache_provider = ::ActiveRemote::Cached::Cache.new(cache_provider)
       end
 
-      @cache 
+      @cache_provider
     end
 
     def self.default_options(options = nil)
@@ -68,6 +68,7 @@ module ActiveRemote
       def _define_cached_find_method(method_name, *method_arguments)
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(",")
+        sorted_method_args = method_arguments.sort.join(",")
 
         expanded_search_args = ""
         method_arguments.each do |method_argument|
@@ -85,7 +86,7 @@ module ActiveRemote
           def self.#{method_name}(#{expanded_method_args}, options = {})
             options = ::ActiveRemote::Cached.default_options.merge(options)
 
-            ::ActiveRemote::Cached.cache.fetch([name, #{expanded_method_args}], options) do
+            ::ActiveRemote::Cached.cache.fetch([name, #{sorted_method_args}], options) do
               self.find(#{expanded_search_args})
             end
           end
@@ -95,6 +96,7 @@ module ActiveRemote
       def _define_cached_search_method(method_name, *method_arguments)
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(",")
+        sorted_method_args = method_arguments.sort.join(",")
 
         expanded_search_args = ""
         method_arguments.each do |method_argument|
@@ -112,7 +114,7 @@ module ActiveRemote
           def self.#{method_name}(#{expanded_method_args}, options = {})
             options = ::ActiveRemote::Cached.default_options.merge(options)
 
-            ::ActiveRemote::Cached.cache.fetch([name, #{expanded_method_args}], options) do
+            ::ActiveRemote::Cached.cache.fetch([name, #{sorted_method_args}], options) do
               self.search(#{expanded_search_args})
             end
           end

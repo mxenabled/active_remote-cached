@@ -1,12 +1,16 @@
+require 'delegate'
+
 module ActiveRemote::Cached
   class Cache < ::SimpleDelegator
     attr_reader :cache_provider
 
     def initialize(new_cache_provider)
       @cache_provider = new_cache_provider
-      validate_provider_method_present(:write)
-      validate_provider_method_present(:read)
+      validate_provider_method_present(:delete)
+      validate_provider_method_present(:exist?)
       validate_provider_method_present(:fetch)
+      validate_provider_method_present(:read)
+      validate_provider_method_present(:write)
       
       super(@cache_provider)
     end
