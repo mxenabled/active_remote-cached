@@ -20,12 +20,6 @@ describe ::ActiveRemote::Cached::Cache do
       error.message.must_match(/respond_to.*delete/i)
     end
 
-    it "validates #exist? present" do
-      cache = OpenStruct.new(:write => nil, :fetch => nil, :read => nil, :delete => nil)
-      error = lambda { ::ActiveRemote::Cached.cache(cache) }.must_raise(RuntimeError)
-      error.message.must_match(/respond_to.*exist/i)
-    end
-
     it "validates #fetch present" do
       cache = OpenStruct.new(:write => nil, :delete => nil, :read => nil, :exist? => nil)
       error = lambda { ::ActiveRemote::Cached.cache(cache) }.must_raise(RuntimeError)
