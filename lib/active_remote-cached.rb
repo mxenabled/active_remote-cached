@@ -1,26 +1,123 @@
+require "active_support/concern"
 require "active_support/core_ext/array/extract_options"
 require "active_remote-cached/version"
-require "heredity"
+require "active_remote-cached/cache"
 
 module ActiveRemote
   module Cached
+    extend ::ActiveSupport::Concern
 
-    def self.included(klass)
-      class << klass
-        extend ClassMethods
-
-        
+    def self.cache(cache_provider = nil)
+      if cache_provider
+        @cache = ::ActiveRemote::Cached::Cache.new(cache_provider)
       end
+
+      @cache 
+    end
+
+    def self.default_options(options = nil)
+      if options
+        @default_options = options
+      end
+
+      @default_options || {}
     end
 
     module ClassMethods
+
       def cached_finders_for(*cached_finder_keys)
         options = cached_finder_keys.extract_options!
 
-        puts cached_finder_keys
-        puts options
+        cached_finder_keys.each do |cached_finder_key|
+          _create_cached_finder_for(cached_finder_key, options)
+        end
       end
 
+      ##
+      # Underscored Methods
+      #
+      def _create_cached_finder_for(cached_finder_key, options = {})
+        cached_finder_key_set = [ cached_finder_key ].flatten.sort
+
+        ##
+        # Run each permutation of the arguments passed in
+        # and define each finder/searcher
+        #
+        cached_finder_key_set.permutation do |arguments|
+          find_method_name = _cached_find_method_name(arguments)
+          search_method_name = _cached_search_method_name(arguments)
+
+          unless self.respond_to?(find_method_name)
+            _define_cached_find_method(find_method_name, arguments)
+          end
+
+          unless self.respond_to?(search_method_name)
+            _define_cached_search_method(search_method_name, arguments)
+          end
+        end
+      end
+
+      def _cached_find_method_name(arguments)
+        "cached_find_by_#{arguments.join('_and_')}"
+      end
+
+      def _cached_search_method_name(arguments)
+        "cached_search_by_#{arguments.join('_and_')}"
+      end
+
+      def _define_cached_find_method(method_name, *method_arguments)
+        method_arguments.flatten!
+        expanded_method_args = method_arguments.join(",")
+
+        expanded_search_args = ""
+        method_arguments.each do |method_argument|
+          expanded_search_args << ":#{method_argument} => #{method_argument},"
+        end
+
+        self.class_eval <<-RUBY, __FILE__, __LINE__ + 1
+          # def self.cached_find_by_user_guid(user_guid, options = {})
+          #   options = ::ActiveRemote::Cached.default_options.merge(options)
+          #
+          #   ::ActiveRemote::Cached.cache.fetch([name, user_guid], options) do
+          #     self.find(:user_guid => user_guid)
+          #   end
+          # end
+          def self.#{method_name}(#{expanded_method_args}, options = {})
+            options = ::ActiveRemote::Cached.default_options.merge(options)
+
+            ::ActiveRemote::Cached.cache.fetch([name, #{expanded_method_args}], options) do
+              self.find(#{expanded_search_args})
+            end
+          end
+        RUBY
+      end
+
+      def _define_cached_search_method(method_name, *method_arguments)
+        method_arguments.flatten!
+        expanded_method_args = method_arguments.join(",")
+
+        expanded_search_args = ""
+        method_arguments.each do |method_argument|
+          expanded_search_args << ":#{method_argument} => #{method_argument},"
+        end
+
+        self.class_eval <<-RUBY, __FILE__, __LINE__ + 1
+          # def self.cached_search_by_user_guid(user_guid, options = {})
+          #   options = ::ActiveRemote::Cached.default_options.merge(options)
+          #
+          #   ::ActiveRemote::Cached.cache.fetch([name, user_guid], options) do
+          #     self.search(:user_guid => user_guid)
+          #   end
+          # end
+          def self.#{method_name}(#{expanded_method_args}, options = {})
+            options = ::ActiveRemote::Cached.default_options.merge(options)
+
+            ::ActiveRemote::Cached.cache.fetch([name, #{expanded_method_args}], options) do
+              self.search(#{expanded_search_args})
+            end
+          end
+        RUBY
+      end
     end
   end
 end
