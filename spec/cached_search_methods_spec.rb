@@ -53,6 +53,12 @@ describe SearchMethodClass do
       ::ActiveRemote::Cached.default_options({})
     end
 
+    it "executes search_by_guid when cached_search with guid called" do
+      FindMethodClass.stub(:search, :hello) do
+        FindMethodClass.cached_search(:guid => :guid).must_equal(:hello)
+      end
+    end
+
     it "executes the fetch block if not present in cache" do
       SearchMethodClass.stub(:search, :hello) do
         SearchMethodClass.cached_search_by_guid(:guid).must_equal(:hello)

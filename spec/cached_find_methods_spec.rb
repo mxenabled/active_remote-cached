@@ -53,6 +53,12 @@ describe FindMethodClass do
       ::ActiveRemote::Cached.default_options({})
     end
 
+    it "executes find_by_guid when cached_find with guid called" do
+      FindMethodClass.stub(:find, :hello) do
+        FindMethodClass.cached_find(:guid => :guid).must_equal(:hello)
+      end
+    end
+
     it "executes the fetch block if not present in cache" do
       FindMethodClass.stub(:find, :hello) do
         FindMethodClass.cached_find_by_guid(:guid).must_equal(:hello)

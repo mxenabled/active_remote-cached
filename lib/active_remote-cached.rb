@@ -37,6 +37,18 @@ module ActiveRemote
         cached_finders_for(*keys)
       end
 
+      def cached_find(argument_hash, options = {})
+        method_name = _cached_find_method_name(argument_hash.keys)
+        arguments = argument_hash.values
+        __send__(method_name, *arguments, options)
+      end
+
+      def cached_search(argument_hash, options = {})
+        method_name = _cached_search_method_name(argument_hash.keys)
+        arguments = argument_hash.values
+        __send__(method_name, *arguments, options)
+      end
+
       ##
       # Underscored Methods
       #
