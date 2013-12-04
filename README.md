@@ -39,6 +39,15 @@ Now that you have a model that has cached finders on it you can use the `cached_
   customer = ::Customer.cached_search(:id => 1) # => [ <Customer id=1> ]
 ```
 
+```ruby
+  # All permutations of "complex" dynamic finders are defined
+  customer = ::Customer.cached_find_by_name_and_email("name", "email") # => <Customer id=1>
+  customer = ::Customer.cached_find_by_email_and_name("email", "name") # => <Customer id=1>
+
+  # Only declared finders are defined
+  customer = ::Customer.cached_find_by_name("name") # => NoMethodError
+```
+
 Each finder as takes an optional options hash that will override the options passed to the caching provider (override from the global defaults setup for ActiveRemote::Cached)
 
 ## Contributing
