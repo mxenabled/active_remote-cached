@@ -1,6 +1,6 @@
 # ActiveRemote::Cached
 
-TODO: Write a gem description
+Provides cached finders for ActiveRemote models that allow a caching provider to cache the result of a query.
 
 ## Installation
 
@@ -18,7 +18,28 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+include `::ActiveRemote::Cached` into your ActiveRemote models that can support cached finders
+
+```ruby
+  class Customer < ::ActiveRemote::Base
+    include ::ActiveRemote::Cached
+
+    # Declare the cached finder methods that will be supported
+    cached_finders_for :id
+    cached_finders_for [:name, :email]
+  end
+```
+
+Now that you have a model that has cached finders on it you can use the `cached_search`, `cached_find`, or dynamic cached finder methods on the model to use the cache before you issue the AR search/find method.
+
+```ruby
+  customer = ::Customer.cached_find_by_id(1) # => <Customer id=1>
+  customer = ::Customer.cached_find(:id => 1) # => <Customer id=1>
+  customer = ::Customer.cached_search_by_id(1) # => [ <Customer id=1> ]
+  customer = ::Customer.cached_search(:id => 1) # => [ <Customer id=1> ]
+```
+
+Each finder as takes an optional options hash that will override the options passed to the caching provider (override from the global defaults setup for ActiveRemote::Cached)
 
 ## Contributing
 
