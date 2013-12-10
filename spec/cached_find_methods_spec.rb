@@ -66,7 +66,7 @@ describe FindMethodClass do
     end
 
     it "merges the default options in for the fetch call" do
-      ::ActiveRemote::Cached.cache.expects(:fetch).with([FindMethodClass.name, :guid], :expires_in => 100).returns(:hello)
+      ::ActiveRemote::Cached.cache.expects(:fetch).with([FindMethodClass.name, "#find", :guid], :expires_in => 100).returns(:hello)
 
       FindMethodClass.stub(:find, :hello) do
         FindMethodClass.cached_find_by_guid(:guid).must_equal(:hello)
@@ -74,7 +74,7 @@ describe FindMethodClass do
     end
 
     it "overrides the default options with local options for the fetch call" do
-      ::ActiveRemote::Cached.cache.expects(:fetch).with([FindMethodClass.name, :guid], :expires_in => 200).returns(:hello)
+      ::ActiveRemote::Cached.cache.expects(:fetch).with([FindMethodClass.name, "#find", :guid], :expires_in => 200).returns(:hello)
 
       FindMethodClass.stub(:find, :hello) do
         FindMethodClass.cached_find_by_guid(:guid, :expires_in => 200).must_equal(:hello)
