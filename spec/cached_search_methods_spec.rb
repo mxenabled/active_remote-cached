@@ -3,6 +3,7 @@ require 'spec_helper'
 class SearchMethodClass
   include ::ActiveRemote::Cached
 
+  def self.derp; nil; end
   def self.find; nil; end
   def self.search; nil; end
 
@@ -51,6 +52,54 @@ describe SearchMethodClass do
 
     after do
       ::ActiveRemote::Cached.default_options({})
+    end
+
+    it "executes the search block when a block is passed" do
+      SearchMethodClass.stub(:derp, :derp) do
+        SearchMethodClass.cached_search(:guid => :guid) do
+          SearchMethodClass.derp
+        end.must_equal(:derp)
+      end
+    end
+
+    it "does not persist empty values by default" do
+      SearchMethodClass.stub(:derp, []) do
+        SearchMethodClass.cached_search(:guid => :guid) do
+          SearchMethodClass.derp
+        end
+
+        SearchMethodClass.cached_exist_search_by_guid?(:guid).must_equal(false)
+      end
+    end
+
+    it "persists empty values when allow_empty sent" do
+      SearchMethodClass.stub(:derp, []) do
+        SearchMethodClass.cached_search({:guid => :guid}, :allow_empty => true) do
+          SearchMethodClass.derp
+        end
+
+        SearchMethodClass.cached_exist_search_by_guid?(:guid).must_equal(true)
+      end
+    end
+
+    it "does not persist nil values" do
+      SearchMethodClass.stub(:derp, nil) do
+        SearchMethodClass.cached_search(:guid => :guid) do
+          SearchMethodClass.derp
+        end
+
+        SearchMethodClass.cached_exist_search_by_guid?(:guid).must_equal(false)
+      end
+    end
+
+    it "does persist non nil values" do
+      SearchMethodClass.stub(:derp, :derp) do
+        SearchMethodClass.cached_search(:guid => :guid) do
+          SearchMethodClass.derp
+        end
+
+        SearchMethodClass.cached_exist_search_by_guid?(:guid).must_equal(true)
+      end
     end
 
     it "executes search_by_guid when cached_search with guid called" do

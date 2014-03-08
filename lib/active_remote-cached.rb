@@ -40,13 +40,27 @@ module ActiveRemote
       def cached_find(argument_hash, options = {})
         method_name = _cached_find_method_name(argument_hash.keys)
         arguments = argument_hash.values
-        __send__(method_name, *arguments, options)
+
+        if block_given?
+          __send__(method_name, *arguments, options) do
+            yield
+          end
+        else
+          __send__(method_name, *arguments, options)
+        end
       end
 
       def cached_search(argument_hash, options = {})
         method_name = _cached_search_method_name(argument_hash.keys)
         arguments = argument_hash.values
-        __send__(method_name, *arguments, options)
+
+        if block_given?
+          __send__(method_name, *arguments, options) do
+            yield
+          end
+        else
+          __send__(method_name, *arguments, options)
+        end
       end
 
       ##
@@ -190,11 +204,19 @@ module ActiveRemote
           #     self.find(:user_guid => user_guid)
           #   end
           # end
+          # 
+          # If a block is given, it is incumbent on the caller to make sure the expectation
+          # of the result object is maintained for requests/responses
+          #
           def self.#{method_name}(#{expanded_method_args}, options = {})
             options = ::ActiveRemote::Cached.default_options.merge(options)
 
             ::ActiveRemote::Cached.cache.fetch([name, "#find", #{sorted_method_args}], options) do
-              self.find(#{expanded_search_args})
+              if block_given?
+                yield
+              else
+                self.find(#{expanded_search_args})
+              end
             end
           end
         RUBY
@@ -218,11 +240,19 @@ module ActiveRemote
           #     self.search(:user_guid => user_guid)
           #   end
           # end
+          #
+          # If a block is given, it is incumbent on the caller to make sure the expectation
+          # of the result object is maintained for requests/responses
+          #
           def self.#{method_name}(#{expanded_method_args}, options = {})
             options = ::ActiveRemote::Cached.default_options.merge(options)
 
             ::ActiveRemote::Cached.cache.fetch([name, "#search", #{sorted_method_args}], options) do
-              self.search(#{expanded_search_args})
+              if block_given?
+                yield
+              else
+                self.search(#{expanded_search_args})
+              end
             end
           end
         RUBY

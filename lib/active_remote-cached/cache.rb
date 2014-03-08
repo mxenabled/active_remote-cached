@@ -15,7 +15,23 @@ module ActiveRemote::Cached
       super(@cache_provider)
     end
 
+    def fetch(name, options = {})
+      fetch_value = super
+
+      unless valid_fetched_value?(fetch_value, options)
+        delete(name)
+      end
+
+      return fetch_value
+    end
+
     private
+
+    def valid_fetched_value?(value, options = {})
+      return false if value.nil?
+      return false if !options.fetch(:allow_empty, false) && value.respond_to?(:empty?) && value.empty?
+      return true
+    end
 
     def validate_provider_method_present(method_name)
       unless self.cache_provider.respond_to?(method_name)
