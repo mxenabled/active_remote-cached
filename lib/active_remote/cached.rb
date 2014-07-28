@@ -6,6 +6,8 @@ require "active_support/core_ext/array/extract_options"
 require "active_remote/cached/cache"
 require "active_remote/cached/version"
 
+require "active_remote/cached/railtie" if defined?(Rails)
+
 module ActiveRemote
   module Cached
     extend ::ActiveSupport::Concern
