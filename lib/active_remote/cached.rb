@@ -1,3 +1,5 @@
+require "active_support"
+require "active_support/cache"
 require "active_support/concern"
 require "active_support/core_ext/array/extract_options"
 
@@ -25,7 +27,6 @@ module ActiveRemote
     end
 
     module ClassMethods
-
       def cached_finders_for(*cached_finder_keys)
         options = cached_finder_keys.extract_options!
 
@@ -259,5 +260,8 @@ module ActiveRemote
         RUBY
       end
     end
+
+    # Initialize the cache provider with a MemoryStore cache
+    cache(ActiveSupport::Cache::MemoryStore.new)
   end
 end
