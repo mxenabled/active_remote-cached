@@ -250,8 +250,10 @@ module ActiveRemote
           #
           def self.#{method_name}(#{expanded_method_args}, options = {})
             options = ::ActiveRemote::Cached.default_options.merge(options)
+            namespace = options.delete(:namespace)
+            cache_key = [namespace, name, "#search", #{sorted_method_args}].compact
 
-            ::ActiveRemote::Cached.cache.fetch([name, "#search", #{sorted_method_args}], options) do
+            ::ActiveRemote::Cached.cache.fetch(cache_key, options) do
               if block_given?
                 yield
               else
