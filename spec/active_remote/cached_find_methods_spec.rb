@@ -80,5 +80,19 @@ describe FindMethodClass do
         FindMethodClass.cached_find_by_guid(:guid, :expires_in => 200).must_equal(:hello)
       end
     end
+
+    describe "namespaced cache" do
+      before do
+        ::ActiveRemote::Cached.default_options(:expires_in => 100, :namespace => "MyApp")
+      end
+
+      it "uses the namespace as a prefix to the cache key" do
+        ::ActiveRemote::Cached.cache.expects(:fetch).with(["MyApp", FindMethodClass.name, "#find", :guid], :expires_in => 100).returns(:hello)
+
+        FindMethodClass.stub(:find, :hello) do
+          FindMethodClass.cached_find_by_guid(:guid)
+        end
+      end
+    end
   end
 end
