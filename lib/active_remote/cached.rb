@@ -134,8 +134,13 @@ module ActiveRemote
           #   ::ActiveRemote::Cached.cache.delete([name, user_guid])
           # end
           def self.#{method_name}(#{expanded_method_args}, options = {})
-            ::ActiveRemote::Cached.cache.delete([name, "#search", #{sorted_method_args}])
-            ::ActiveRemote::Cached.cache.delete([name, "#find", #{sorted_method_args}])
+            options = ::ActiveRemote::Cached.default_options.merge(options)
+            namespace = options.delete(:namespace)
+            find_cache_key = [namespace, name, "#find", #{sorted_method_args}].compact
+            search_cache_key = [namespace, name, "#search", #{sorted_method_args}].compact
+
+            ::ActiveRemote::Cached.cache.delete(find_cache_key)
+            ::ActiveRemote::Cached.cache.delete(search_cache_key)
           end
         RUBY
       end
@@ -150,18 +155,15 @@ module ActiveRemote
           #   ::ActiveRemote::Cached.cache.exist?([name, user_guid])
           # end
           def self.#{method_name}(#{expanded_method_args}, options = {})
-            ::ActiveRemote::Cached.cache.exist?([name, "#find", #{sorted_method_args}])
+            options = ::ActiveRemote::Cached.default_options.merge(options)
+            namespace = options.delete(:namespace)
+            cache_key = [namespace, name, "#find", #{sorted_method_args}].compact
+
+            ::ActiveRemote::Cached.cache.exist?(cache_key)
           end
         RUBY
 
-        self.class_eval <<-RUBY, __FILE__, __LINE__ + 1
-          # def self.cached_exist_find_by_user_guid?(user_guid, options = {})
-          #   ::ActiveRemote::Cached.cache.exist?([name, user_guid])
-          # end
-          def self.#{method_name}?(#{expanded_method_args}, options = {})
-            ::ActiveRemote::Cached.cache.exist?([name, "#find", #{sorted_method_args}])
-          end
-        RUBY
+        singleton_class.send(:alias_method, "#{method_name}?", method_name)
       end
 
       def _define_cached_exist_search_method(method_name, *method_arguments)
@@ -171,21 +173,18 @@ module ActiveRemote
 
         self.class_eval <<-RUBY, __FILE__, __LINE__ + 1
           # def self.cached_exist_search_by_user_guid(user_guid, options = {})
-          #   ::ActiveRemote::Cached.cache.exist?([name, user_guid])
+          #   ::ActiveRemote::Cached.cache.exist?([namespace, name, "#search", user_guid])
           # end
           def self.#{method_name}(#{expanded_method_args}, options = {})
-            ::ActiveRemote::Cached.cache.exist?([name, "#search", #{sorted_method_args}])
+            options = ::ActiveRemote::Cached.default_options.merge(options)
+            namespace = options.delete(:namespace)
+            cache_key = [namespace, name, "#search", #{sorted_method_args}].compact
+
+            ::ActiveRemote::Cached.cache.exist?(cache_key)
           end
         RUBY
 
-        self.class_eval <<-RUBY, __FILE__, __LINE__ + 1
-          # def self.cached_exist_search_by_user_guid?(user_guid, options = {})
-          #   ::ActiveRemote::Cached.cache.exist?([name, user_guid])
-          # end
-          def self.#{method_name}?(#{expanded_method_args}, options = {})
-            ::ActiveRemote::Cached.cache.exist?([name, "#search", #{sorted_method_args}])
-          end
-        RUBY
+        singleton_class.send(:alias_method, "#{method_name}?", method_name)
       end
 
       def _define_cached_find_method(method_name, *method_arguments)
@@ -202,7 +201,7 @@ module ActiveRemote
           # def self.cached_find_by_user_guid(user_guid, options = {})
           #   options = ::ActiveRemote::Cached.default_options.merge(options)
           #
-          #   ::ActiveRemote::Cached.cache.fetch([name, "#find", user_guid], options) do
+          #   ::ActiveRemote::Cached.cache.fetch([namespace, name, "#find", user_guid], options) do
           #     self.find(:user_guid => user_guid)
           #   end
           # end
@@ -240,7 +239,7 @@ module ActiveRemote
           # def self.cached_search_by_user_guid(user_guid, options = {})
           #   options = ::ActiveRemote::Cached.default_options.merge(options)
           #
-          #   ::ActiveRemote::Cached.cache.fetch([name, "#search", user_guid], options) do
+          #   ::ActiveRemote::Cached.cache.fetch([namespace, name, "#search", user_guid], options) do
           #     self.search(:user_guid => user_guid)
           #   end
           # end
