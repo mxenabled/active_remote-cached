@@ -6,17 +6,32 @@ module ActiveRemote::Cached
 
     def initialize(new_cache_provider)
       @cache_provider = new_cache_provider
+      @nested_cache_provider = ::ActiveSupport::Cache::NullStore.new
+
       validate_provider_method_present(:delete)
       validate_provider_method_present(:exist?)
       validate_provider_method_present(:fetch)
       validate_provider_method_present(:read)
       validate_provider_method_present(:write)
-      
+
       super(@cache_provider)
     end
 
+    def delete(*args)
+      nested_cache_provider.delete(*args)
+      super
+    end
+
+    def enable_nested_caching!
+      @nested_cache_provider = ::ActiveSupport::Cache::MemoryStore.new
+    end
+
+    def exist?(*args)
+      nested_cache_provider.exist?(*args) || super
+    end
+
     def fetch(name, options = {})
-      fetch_value = super
+      fetch_value = nested_cache_provider.fetch(name, options) { super }
 
       unless valid_fetched_value?(fetch_value, options)
         delete(name)
@@ -25,7 +40,20 @@ module ActiveRemote::Cached
       return fetch_value
     end
 
-    private
+    def read(*args)
+      nested_cache_provider.read(*args) || super
+    end
+
+    def write(*args)
+      nested_cache_provider.write(*args)
+      super
+    end
+
+  private
+
+    def nested_cache_provider
+      @nested_cache_provider
+    end
 
     def valid_fetched_value?(value, options = {})
       return false if value.nil?
@@ -41,6 +69,5 @@ module ActiveRemote::Cached
         CACHE_METHOD
       end
     end
-      
   end
 end
