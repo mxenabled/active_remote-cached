@@ -83,23 +83,23 @@ module ActiveRemote
           search_method_name = _cached_search_method_name(arguments)
 
           unless self.respond_to?(delete_method_name)
-            _define_cached_delete_method(delete_method_name, arguments)
+            _define_cached_delete_method(delete_method_name, arguments, options)
           end
 
           unless self.respond_to?(exist_find_method_name)
-            _define_cached_exist_find_method(exist_find_method_name, arguments)
+            _define_cached_exist_find_method(exist_find_method_name, arguments, options)
           end
 
           unless self.respond_to?(exist_search_method_name)
-            _define_cached_exist_search_method(exist_search_method_name, arguments)
+            _define_cached_exist_search_method(exist_search_method_name, arguments, options)
           end
 
           unless self.respond_to?(find_method_name)
-            _define_cached_find_method(find_method_name, arguments)
+            _define_cached_find_method(find_method_name, arguments, options)
           end
 
           unless self.respond_to?(search_method_name)
-            _define_cached_search_method(search_method_name, arguments)
+            _define_cached_search_method(search_method_name, arguments, options)
           end
         end
       end
@@ -124,7 +124,7 @@ module ActiveRemote
         "cached_search_by_#{arguments.join('_and_')}"
       end
 
-      def _define_cached_delete_method(method_name, *method_arguments)
+      def _define_cached_delete_method(method_name, *method_arguments, cached_finder_options)
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(",")
         sorted_method_args = method_arguments.sort.join(",")
@@ -134,7 +134,7 @@ module ActiveRemote
           #   ::ActiveRemote::Cached.cache.delete([name, user_guid])
           # end
           def self.#{method_name}(#{expanded_method_args}, options = {})
-            options = ::ActiveRemote::Cached.default_options.merge(options)
+            options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(options)
             namespace = options.delete(:namespace)
             find_cache_key = [namespace, name, "#find", #{sorted_method_args}].compact
             search_cache_key = [namespace, name, "#search", #{sorted_method_args}].compact
@@ -145,7 +145,7 @@ module ActiveRemote
         RUBY
       end
 
-      def _define_cached_exist_find_method(method_name, *method_arguments)
+      def _define_cached_exist_find_method(method_name, *method_arguments, cached_finder_options)
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(",")
         sorted_method_args = method_arguments.sort.join(",")
@@ -155,7 +155,7 @@ module ActiveRemote
           #   ::ActiveRemote::Cached.cache.exist?([name, user_guid])
           # end
           def self.#{method_name}(#{expanded_method_args}, options = {})
-            options = ::ActiveRemote::Cached.default_options.merge(options)
+            options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(options)
             namespace = options.delete(:namespace)
             cache_key = [namespace, name, "#find", #{sorted_method_args}].compact
 
@@ -166,7 +166,7 @@ module ActiveRemote
         singleton_class.send(:alias_method, "#{method_name}?", method_name)
       end
 
-      def _define_cached_exist_search_method(method_name, *method_arguments)
+      def _define_cached_exist_search_method(method_name, *method_arguments, cached_finder_options)
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(",")
         sorted_method_args = method_arguments.sort.join(",")
@@ -176,7 +176,7 @@ module ActiveRemote
           #   ::ActiveRemote::Cached.cache.exist?([namespace, name, "#search", user_guid])
           # end
           def self.#{method_name}(#{expanded_method_args}, options = {})
-            options = ::ActiveRemote::Cached.default_options.merge(options)
+            options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(options)
             namespace = options.delete(:namespace)
             cache_key = [namespace, name, "#search", #{sorted_method_args}].compact
 
@@ -187,7 +187,7 @@ module ActiveRemote
         singleton_class.send(:alias_method, "#{method_name}?", method_name)
       end
 
-      def _define_cached_find_method(method_name, *method_arguments)
+      def _define_cached_find_method(method_name, *method_arguments, cached_finder_options)
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(",")
         sorted_method_args = method_arguments.sort.join(",")
@@ -199,7 +199,7 @@ module ActiveRemote
 
         self.class_eval <<-RUBY, __FILE__, __LINE__ + 1
           # def self.cached_find_by_user_guid(user_guid, options = {})
-          #   options = ::ActiveRemote::Cached.default_options.merge(options)
+          #   options = ::ActiveRemote::Cached.default_options.merge({}).merge(options)
           #
           #   ::ActiveRemote::Cached.cache.fetch([namespace, name, "#find", user_guid], options) do
           #     self.find(:user_guid => user_guid)
@@ -210,7 +210,7 @@ module ActiveRemote
           # of the result object is maintained for requests/responses
           #
           def self.#{method_name}(#{expanded_method_args}, options = {})
-            options = ::ActiveRemote::Cached.default_options.merge(options)
+            options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(options)
             namespace = options.delete(:namespace)
             cache_key = [namespace, name, "#find", #{sorted_method_args}].compact
 
@@ -225,7 +225,7 @@ module ActiveRemote
         RUBY
       end
 
-      def _define_cached_search_method(method_name, *method_arguments)
+      def _define_cached_search_method(method_name, *method_arguments, cached_finder_options)
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(",")
         sorted_method_args = method_arguments.sort.join(",")
@@ -237,7 +237,7 @@ module ActiveRemote
 
         self.class_eval <<-RUBY, __FILE__, __LINE__ + 1
           # def self.cached_search_by_user_guid(user_guid, options = {})
-          #   options = ::ActiveRemote::Cached.default_options.merge(options)
+          #   options = ::ActiveRemote::Cached.default_options.merge({}).merge(options)
           #
           #   ::ActiveRemote::Cached.cache.fetch([namespace, name, "#search", user_guid], options) do
           #     self.search(:user_guid => user_guid)
@@ -248,7 +248,7 @@ module ActiveRemote
           # of the result object is maintained for requests/responses
           #
           def self.#{method_name}(#{expanded_method_args}, options = {})
-            options = ::ActiveRemote::Cached.default_options.merge(options)
+            options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(options)
             namespace = options.delete(:namespace)
             cache_key = [namespace, name, "#search", #{sorted_method_args}].compact
 
