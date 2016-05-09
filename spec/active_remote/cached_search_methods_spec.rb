@@ -7,6 +7,7 @@ class SearchMethodClass
   def self.find; nil; end
   def self.search; nil; end
 
+  cached_finders_for :foo, :expires_in => 500
   cached_finders_for :guid
   cached_finders_for :guid, :user_guid
   cached_finders_for [:user_guid, :client_guid]
@@ -15,6 +16,10 @@ end
 
 describe SearchMethodClass do
   describe "API" do
+    it "creates 'cached_search_by_foo'" do
+      SearchMethodClass.must_respond_to("cached_search_by_foo")
+    end
+
     it "creates 'cached_search_by_guid'" do
       SearchMethodClass.must_respond_to("cached_search_by_guid")
     end
@@ -141,6 +146,33 @@ describe SearchMethodClass do
         SearchMethodClass.stub(:search, :hello) do
           SearchMethodClass.cached_search_by_guid(:guid)
         end
+      end
+    end
+  end
+
+  describe "#cached_search_by_foo" do
+    before do
+      ::ActiveRemote::Cached.cache(HashCache.new)
+      ::ActiveRemote::Cached.default_options(:expires_in => 100)
+    end
+
+    after do
+      ::ActiveRemote::Cached.default_options({})
+    end
+
+    it "overrides the default options with cached_finder options for the fetch call" do
+      ::ActiveRemote::Cached.cache.expects(:fetch).with([SearchMethodClass.name, "#search", :foo], :expires_in => 500).returns(:hello)
+
+      SearchMethodClass.stub(:find, :hello) do
+        SearchMethodClass.cached_search_by_foo(:foo).must_equal(:hello)
+      end
+    end
+
+    it "overrides the cached_finder options with local options for the fetch call" do
+      ::ActiveRemote::Cached.cache.expects(:fetch).with([SearchMethodClass.name, "#search", :foo], :expires_in => 200).returns(:hello)
+
+      SearchMethodClass.stub(:find, :hello) do
+        SearchMethodClass.cached_search_by_foo(:foo, :expires_in => 200).must_equal(:hello)
       end
     end
   end
