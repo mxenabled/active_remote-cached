@@ -20,6 +20,10 @@ describe SearchMethodClass do
       SearchMethodClass.must_respond_to("cached_search_by_foo")
     end
 
+    it "creates 'cached_search_by_foo!'" do
+      SearchMethodClass.must_respond_to("cached_search_by_foo!")
+    end
+
     it "creates 'cached_search_by_guid'" do
       SearchMethodClass.must_respond_to("cached_search_by_guid")
     end
@@ -46,6 +50,10 @@ describe SearchMethodClass do
 
     it "creates 'cached_search_by_client_guid_and_user_guid_and_derp'" do
       SearchMethodClass.must_respond_to("cached_search_by_client_guid_and_user_guid_and_derp")
+    end
+
+    it "creates 'cached_search_by_client_guid_and_user_guid_and_derp!'" do
+      SearchMethodClass.must_respond_to("cached_search_by_client_guid_and_user_guid_and_derp!")
     end
   end
 
@@ -173,6 +181,29 @@ describe SearchMethodClass do
 
       SearchMethodClass.stub(:find, :hello) do
         SearchMethodClass.cached_search_by_foo(:foo, :expires_in => 200).must_equal(:hello)
+      end
+    end
+  end
+
+  describe "#cached_search_by_foo!" do
+    before do
+      ::ActiveRemote::Cached.cache(HashCache.new)
+      ::ActiveRemote::Cached.default_options(:expires_in => 100)
+    end
+
+    after do
+      ::ActiveRemote::Cached.default_options({})
+    end
+
+    it "returns results when present" do
+      SearchMethodClass.stub(:search, [:hello]) do
+        SearchMethodClass.cached_search_by_foo!(:foo, :expires_in => 200).must_equal([:hello])
+      end
+    end
+
+    it "raises ActiveRemote::RemoteRecordNotFound when not found" do
+      SearchMethodClass.stub(:search, []) do
+        -> { SearchMethodClass.cached_search_by_foo!(:foo, :expires_in => 200) }.must_raise ::ActiveRemote::RemoteRecordNotFound
       end
     end
   end
