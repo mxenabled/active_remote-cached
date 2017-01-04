@@ -20,7 +20,7 @@ describe SearchMethodClass do
       SearchMethodClass.must_respond_to("cached_search_by_foo")
     end
 
-    it "creates 'cached_search_by_foo'" do
+    it "creates 'cached_search_by_foo!'" do
       SearchMethodClass.must_respond_to("cached_search_by_foo!")
     end
 
@@ -52,7 +52,7 @@ describe SearchMethodClass do
       SearchMethodClass.must_respond_to("cached_search_by_client_guid_and_user_guid_and_derp")
     end
 
-    it "creates 'cached_search_by_client_guid_and_user_guid_and_derp'" do
+    it "creates 'cached_search_by_client_guid_and_user_guid_and_derp!'" do
       SearchMethodClass.must_respond_to("cached_search_by_client_guid_and_user_guid_and_derp!")
     end
   end
