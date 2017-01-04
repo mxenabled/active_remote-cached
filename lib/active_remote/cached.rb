@@ -318,7 +318,7 @@ module ActiveRemote
                 results = self.search(#{expanded_search_args})
               end
 
-              raise ::ActiveRemote::RemoteRecordNotFound.new(self.class) if results.size <= 0
+              raise ::ActiveRemote::RemoteRecordNotFound.new(self.class) if results.first.nil?
               results
             end
           end
