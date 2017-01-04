@@ -5,6 +5,7 @@ require "active_support/core_ext/array/extract_options"
 
 require "active_remote/cached/cache"
 require "active_remote/cached/version"
+require "active_remote/errors"
 
 module ActiveRemote
   module Cached
@@ -81,6 +82,7 @@ module ActiveRemote
           exist_search_method_name = _cached_exist_search_method_name(arguments)
           find_method_name = _cached_find_method_name(arguments)
           search_method_name = _cached_search_method_name(arguments)
+          search_bang_method_name = "#{search_method_name}!"
 
           unless self.respond_to?(delete_method_name)
             _define_cached_delete_method(delete_method_name, arguments, options)
@@ -96,6 +98,10 @@ module ActiveRemote
 
           unless self.respond_to?(find_method_name)
             _define_cached_find_method(find_method_name, arguments, options)
+          end
+
+          unless self.respond_to?(search_bang_method_name)
+            _define_cached_search_bang_method(search_bang_method_name, arguments, options)
           end
 
           unless self.respond_to?(search_method_name)
@@ -240,7 +246,11 @@ module ActiveRemote
           #   options = ::ActiveRemote::Cached.default_options.merge({}).merge(options)
           #
           #   ::ActiveRemote::Cached.cache.fetch([namespace, name, "#search", user_guid], options) do
-          #     self.search(:user_guid => user_guid)
+          #     if block_given?
+          #       yield
+          #     else
+          #       self.search(:user_guid => user_guid)
+          #     end
           #   end
           # end
           #
@@ -258,6 +268,58 @@ module ActiveRemote
               else
                 self.search(#{expanded_search_args})
               end
+            end
+          end
+        RUBY
+      end
+
+      def _define_cached_search_bang_method(method_name, *method_arguments, cached_finder_options)
+        method_arguments.flatten!
+        expanded_method_args = method_arguments.join(",")
+        sorted_method_args = method_arguments.sort.join(",")
+
+        expanded_search_args = ""
+        method_arguments.each do |method_argument|
+          expanded_search_args << ":#{method_argument} => #{method_argument},"
+        end
+
+        self.class_eval <<-RUBY, __FILE__, __LINE__ + 1
+          # def self.cached_search_by_user_guid!(user_guid, options = {})
+          #   options = ::ActiveRemote::Cached.default_options.merge({}).merge(options)
+          #
+          #   ::ActiveRemote::Cached.cache.fetch([namespace, name, "#search", user_guid], options) do
+          #     results = []
+          #
+          #     if block_given?
+          #       results = yield
+          #     else
+          #       results = self.search(:user_guid => user_guid)
+          #     end
+          #
+          #     raise ::ActiveRemote::RemoteRecordNotFound.new(self.class) if results.size <= 0
+          #     results
+          #   end
+          # end
+          #
+          # If a block is given, it is incumbent on the caller to make sure the expectation
+          # of the result object is maintained for requests/responses
+          #
+          def self.#{method_name}(#{expanded_method_args}, options = {})
+            options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(options)
+            namespace = options.delete(:namespace)
+            cache_key = [namespace, name, "#search", #{sorted_method_args}].compact
+
+            ::ActiveRemote::Cached.cache.fetch(cache_key, options) do
+              results = []
+
+              if block_given?
+                results = yield
+              else
+                results = self.search(#{expanded_search_args})
+              end
+
+              raise ::ActiveRemote::RemoteRecordNotFound.new(self.class) if results.size <= 0
+              results
             end
           end
         RUBY
