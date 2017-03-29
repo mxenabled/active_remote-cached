@@ -139,9 +139,9 @@ module ActiveRemote
           # def self.cached_delete_by_user_guid(user_guid, options = {})
           #   ::ActiveRemote::Cached.cache.delete([name, user_guid])
           # end
-          def self.#{method_name}(#{expanded_method_args}, options = {})
-            options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(options)
-            namespace = options.delete(:namespace)
+          def self.#{method_name}(#{expanded_method_args}, __active_remote_cached_options = {})
+            __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
+            namespace = __active_remote_cached_options.delete(:namespace)
             find_cache_key = [namespace, name, "#find", #{sorted_method_args}].compact
             search_cache_key = [namespace, name, "#search", #{sorted_method_args}].compact
 
@@ -160,9 +160,9 @@ module ActiveRemote
           # def self.cached_exist_find_by_user_guid(user_guid, options = {})
           #   ::ActiveRemote::Cached.cache.exist?([name, user_guid])
           # end
-          def self.#{method_name}(#{expanded_method_args}, options = {})
-            options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(options)
-            namespace = options.delete(:namespace)
+          def self.#{method_name}(#{expanded_method_args}, __active_remote_cached_options = {})
+            __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
+            namespace = __active_remote_cached_options.delete(:namespace)
             cache_key = [namespace, name, "#find", #{sorted_method_args}].compact
 
             ::ActiveRemote::Cached.cache.exist?(cache_key)
@@ -181,9 +181,9 @@ module ActiveRemote
           # def self.cached_exist_search_by_user_guid(user_guid, options = {})
           #   ::ActiveRemote::Cached.cache.exist?([namespace, name, "#search", user_guid])
           # end
-          def self.#{method_name}(#{expanded_method_args}, options = {})
-            options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(options)
-            namespace = options.delete(:namespace)
+          def self.#{method_name}(#{expanded_method_args}, __active_remote_cached_options = {})
+            __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
+            namespace = __active_remote_cached_options.delete(:namespace)
             cache_key = [namespace, name, "#search", #{sorted_method_args}].compact
 
             ::ActiveRemote::Cached.cache.exist?(cache_key)
@@ -215,12 +215,12 @@ module ActiveRemote
           # If a block is given, it is incumbent on the caller to make sure the expectation
           # of the result object is maintained for requests/responses
           #
-          def self.#{method_name}(#{expanded_method_args}, options = {})
-            options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(options)
-            namespace = options.delete(:namespace)
+          def self.#{method_name}(#{expanded_method_args}, __active_remote_cached_options = {})
+            __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
+            namespace = __active_remote_cached_options.delete(:namespace)
             cache_key = [namespace, name, "#find", #{sorted_method_args}].compact
 
-            ::ActiveRemote::Cached.cache.fetch(cache_key, options) do
+            ::ActiveRemote::Cached.cache.fetch(cache_key, __active_remote_cached_options) do
               if block_given?
                 yield
               else
@@ -257,12 +257,12 @@ module ActiveRemote
           # If a block is given, it is incumbent on the caller to make sure the expectation
           # of the result object is maintained for requests/responses
           #
-          def self.#{method_name}(#{expanded_method_args}, options = {})
-            options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(options)
-            namespace = options.delete(:namespace)
+          def self.#{method_name}(#{expanded_method_args}, __active_remote_cached_options = {})
+            __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
+            namespace = __active_remote_cached_options.delete(:namespace)
             cache_key = [namespace, name, "#search", #{sorted_method_args}].compact
 
-            ::ActiveRemote::Cached.cache.fetch(cache_key, options) do
+            ::ActiveRemote::Cached.cache.fetch(cache_key, __active_remote_cached_options) do
               if block_given?
                 yield
               else
@@ -304,12 +304,12 @@ module ActiveRemote
           # If a block is given, it is incumbent on the caller to make sure the expectation
           # of the result object is maintained for requests/responses
           #
-          def self.#{method_name}(#{expanded_method_args}, options = {})
-            options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(options)
-            namespace = options.delete(:namespace)
+          def self.#{method_name}(#{expanded_method_args}, __active_remote_cached_options = {})
+            __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
+            namespace = __active_remote_cached_options.delete(:namespace)
             cache_key = [namespace, name, "#search", #{sorted_method_args}].compact
 
-            ::ActiveRemote::Cached.cache.fetch(cache_key, options) do
+            ::ActiveRemote::Cached.cache.fetch(cache_key, __active_remote_cached_options) do
               results = []
 
               if block_given?
