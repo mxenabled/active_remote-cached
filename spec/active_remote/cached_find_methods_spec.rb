@@ -79,7 +79,6 @@ describe FindMethodClass do
     end
 
     it "overrides the default options with local options for the fetch call" do
-      $expected = true
       ::ActiveRemote::Cached.cache.expects(:fetch).with([FindMethodClass.name, "#find", "guid"], :expires_in => 200).returns(:hello)
 
       FindMethodClass.stub(:find, :hello) do
