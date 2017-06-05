@@ -30,17 +30,14 @@ module ActiveRemote::Cached
     end
 
     def cache_key
-      if remove_characters?
-        @argument_string.gsub(REMOVE_CHARACTERS, "")
-      elsif replace_characters?
+      return @argument_string.gsub(REMOVE_CHARACTERS, "") if remove_characters?
+      if replace_characters?
         REPLACE_MAP.each do |character, replacement|
           @argument_string.gsub!(character, replacement)
         end
-
-        @argument_string
-      else
-        @argument_string
       end
+
+      @argument_string
     end
 
     def to_s
