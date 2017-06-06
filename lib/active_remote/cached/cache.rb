@@ -56,7 +56,7 @@ module ActiveRemote::Cached
     end
 
     def valid_fetched_value?(value, options = {})
-      return false if value.nil?
+      return false if value.nil? && !options.fetch(:allow_nil, false)
       return false if !options.fetch(:allow_empty, false) && value.respond_to?(:empty?) && value.empty?
       return true
     end
