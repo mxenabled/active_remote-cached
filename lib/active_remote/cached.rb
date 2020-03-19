@@ -12,6 +12,10 @@ module ActiveRemote
   module Cached
     extend ::ActiveSupport::Concern
 
+    # When upgrading Rails versions, don't reuse the same cache key, because you can't rely upon the serialized objects to be consistent across versions.
+    # To fix, this adds a cache key that caches the ruby engine version and the activesupport version to prevent cache re-use across different versions.
+    RUBY_AND_ACTIVE_SUPPORT_VERSION = "#{RUBY_ENGINE_VERSION}:#{ActiveSupport::VERSION::STRING}".freeze
+
     def self.cache(cache_provider = nil)
       if cache_provider
         @cache_provider = ::ActiveRemote::Cached::Cache.new(cache_provider)
@@ -144,6 +148,7 @@ module ActiveRemote
             __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
             namespace = __active_remote_cached_options.delete(:namespace)
             find_cache_key = [
+              RUBY_AND_ACTIVE_SUPPORT_VERSION,
               namespace,
               name,
               "#find",
@@ -151,6 +156,7 @@ module ActiveRemote
             ].compact
 
             search_cache_key = [
+              RUBY_AND_ACTIVE_SUPPORT_VERSION,
               namespace,
               name,
               "#search",
@@ -176,6 +182,7 @@ module ActiveRemote
             __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
             namespace = __active_remote_cached_options.delete(:namespace)
             cache_key = [
+              RUBY_AND_ACTIVE_SUPPORT_VERSION,
               namespace,
               name,
               "#find",
@@ -202,6 +209,7 @@ module ActiveRemote
             __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
             namespace = __active_remote_cached_options.delete(:namespace)
             cache_key = [
+              RUBY_AND_ACTIVE_SUPPORT_VERSION,
               namespace,
               name,
               "#search",
@@ -241,6 +249,7 @@ module ActiveRemote
             __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
             namespace = __active_remote_cached_options.delete(:namespace)
             cache_key = [
+              RUBY_AND_ACTIVE_SUPPORT_VERSION,
               namespace,
               name,
               "#find",
@@ -288,6 +297,7 @@ module ActiveRemote
             __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
             namespace = __active_remote_cached_options.delete(:namespace)
             cache_key = [
+              RUBY_AND_ACTIVE_SUPPORT_VERSION,
               namespace,
               name,
               "#search",
@@ -340,6 +350,7 @@ module ActiveRemote
             __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
             namespace = __active_remote_cached_options.delete(:namespace)
             cache_key = [
+              RUBY_AND_ACTIVE_SUPPORT_VERSION,
               namespace,
               name,
               "#search",
