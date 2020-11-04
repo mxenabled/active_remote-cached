@@ -34,9 +34,9 @@ module ActiveRemote
 
     module ClassMethods
       def cached_find_by(**args)
-        options = args.delete(:options) || {}
+        options = args.delete(:cache_options) || {}
         find_method_name = _cached_search_method_name(args.keys)
-        raise "no such finder #{find_method_name}" unless respond_to?(find_method_name.to_sym)
+        raise "no such finder #{find_method_name}" unless respond_to?(find_method_name)
         send(find_method_name, args.values, options).first
       end
 
@@ -46,8 +46,8 @@ module ActiveRemote
         result
       end
 
-      def cached_exist_find_by?(**options)
-        options = args.delete(:options) || {}
+      def cached_exist_find_by?(**args)
+        options = args.delete(:cache_options) || {}
         exist_by_method_name = _cached_exist_search_method_name(args.keys) # ? is not necessary as it's aliased down below.
         raise "#{exist_by_method_name} does not exist for #{self}" unless respond_to?(exist_by_method_name)
         send(exist_by_method_name, args.values, options)
@@ -55,7 +55,6 @@ module ActiveRemote
 
       def cached_finders_for(*cached_finder_keys)
         options = cached_finder_keys.extract_options!
-
         cached_finder_keys.each do |cached_finder_key|
           _create_cached_finder_for(cached_finder_key, options)
         end
