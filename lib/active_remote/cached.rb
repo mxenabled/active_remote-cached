@@ -55,6 +55,7 @@ module ActiveRemote
 
       def cached_finders_for(*cached_finder_keys)
         options = cached_finder_keys.extract_options!
+
         cached_finder_keys.each do |cached_finder_key|
           _create_cached_finder_for(cached_finder_key, options)
         end
