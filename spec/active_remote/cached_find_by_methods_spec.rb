@@ -30,13 +30,13 @@ describe FindByMethodClass do
     it "raises an error if the cached_finders_for does not exist for a single attribute cached_find_by" do
       expect do
         FindByMethodClass.cached_find_by(not_an_attribute: "foo")
-      end.to raise_error("cached_finders_for [:not_an_attribute] is not declared. Add it to call this method.")
+      end.to raise_error("cached_finders_for [:not_an_attribute] not included in class definition")
     end
 
     it "raises an error if the cached_finders_for does not exist for a multiple attribute cached_find_by" do
       expect do
         FindByMethodClass.cached_find_by(not_an_attribute: "foo", other_not_an_attribute: "bar")
-      end.to raise_error("cached_finders_for [:not_an_attribute, :other_not_an_attribute] is not declared. Add it to call this method.")
+      end.to raise_error("cached_finders_for [:not_an_attribute, :other_not_an_attribute] not included in class definition")
     end
   end
 
