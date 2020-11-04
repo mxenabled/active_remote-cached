@@ -48,7 +48,7 @@ module ActiveRemote
 
       def cached_exist_find_by?(**args)
         cache_options = args.delete(:cache_options) || {}
-        exist_by_method_name = _cached_exist_search_method_name(args.keys) # ? is not necessary as it's aliased
+        exist_by_method_name = _cached_exist_search_method_name(args.keys) # ? is not necessary as the method is aliased both ways
         raise "cached_finders_for #{args.keys.map(&:to_sym)} not included in class definition"  unless respond_to?(exist_by_method_name)
         send(exist_by_method_name, args.values, cache_options)
       end
