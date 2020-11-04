@@ -15,15 +15,12 @@ end
 
 describe FindByMethodClass do
   describe "API" do
-    it "creates 'cached_find_by'" do
-      expect(FindByMethodClass).to respond_to(:cached_find_by)
-    end
-
-    it "creates 'cached_find_by!'" do
-      expect(FindByMethodClass).to respond_to(:cached_find_by!)
-    end
 
     context "cached_find_by" do
+      it "creates 'cached_find_by'" do
+        expect(FindByMethodClass).to respond_to(:cached_find_by)
+      end
+
       it "raises an error if the cached_finders_for does not exist for a single attribute cached_find_by" do
         expect do
           FindByMethodClass.cached_find_by(not_an_attribute: "foo")
@@ -36,6 +33,25 @@ describe FindByMethodClass do
         end.to raise_error("cached_finders_for [:not_an_attribute, :other_not_an_attribute] not included in class definition")
       end
     end
+
+    context "cached_find_by" do
+      it "creates 'cached_find_by!'" do
+        expect(FindByMethodClass).to respond_to(:cached_find_by!)
+      end
+
+      it "raises an error if the cached_finders_for does not exist for a single attribute cached_find_by!" do
+        expect do
+          FindByMethodClass.cached_find_by!(not_an_attribute: "foo")
+        end.to raise_error("cached_finders_for [:not_an_attribute] not included in class definition")
+      end
+
+      it "raises an error if the cached_finders_for does not exist for a multiple attribute cached_find_by!" do
+        expect do
+          FindByMethodClass.cached_find_by!(not_an_attribute: "foo", other_not_an_attribute: "bar")
+        end.to raise_error("cached_finders_for [:not_an_attribute, :other_not_an_attribute] not included in class definition")
+      end
+    end
+
 
     context "cached_exist_find_by?" do
       it "creates 'cached_exist_find_by?'" do
