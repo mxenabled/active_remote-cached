@@ -46,6 +46,11 @@ describe FindByMethodClass do
           FindByMethodClass.cached_find_by(:guid => "foobar")
         end.not_to raise_error(::ActiveRemote::RemoteRecordNotFound)
       end
+
+      it "calls cached_find_by_guid with cache options" do
+        expect(FindByMethodClass).to receive(:cached_search_by_guid).with(["foobar"], { :expires_in => 1 }).and_return([1])
+        expect(FindByMethodClass.cached_find_by(:guid => "foobar", :cache_options => { :expires_in => 1 })).to eq(1)
+      end
     end
 
     context "user_guid, client_guid" do
@@ -55,7 +60,7 @@ describe FindByMethodClass do
       end
 
       it "calls cached_search_by_user_guid_and_client_guid with options returns 1" do
-        expect(FindByMethodClass).to receive(:cached_search_by_user_guid_and_client_guid).with(["foo", "bar"], {:expires_in => 1}).and_return([1])
+        expect(FindByMethodClass).to receive(:cached_search_by_user_guid_and_client_guid).with(["foo", "bar"], { :expires_in => 1 }).and_return([1])
         expect(FindByMethodClass.cached_find_by(:user_guid => "foo", :client_guid => "bar", :cache_options => { :expires_in => 1 })).to eq(1)
       end
 
