@@ -33,6 +33,26 @@ module ActiveRemote
     end
 
     module ClassMethods
+      def cached_find_by(**args)
+        options = args.delete(:options) || {}
+        find_method_name = _cached_search_method_name(args.keys)
+        raise "no such finder #{find_method_name}" unless respond_to?(find_method_name.to_sym)
+        send(find_method_name, args.values, options).first
+      end
+
+      def cached_find_by!(**args)
+        result = self.cached_find_by(args)
+        raise ::ActiveRemote::RemoteRecordNotFound, self if result.nil?
+        result
+      end
+
+      def cached_exist_find_by?(**options)
+        options = args.delete(:options) || {}
+        exist_by_method_name = _cached_exist_search_method_name(args.keys) # ? is not necessary as it's aliased down below.
+        raise "#{exist_by_method_name} does not exist for #{self}" unless respond_to?(exist_by_method_name)
+        send(exist_by_method_name, args.values, options)
+      end
+
       def cached_finders_for(*cached_finder_keys)
         options = cached_finder_keys.extract_options!
 
