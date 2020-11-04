@@ -88,7 +88,7 @@ describe FindByMethodClass do
         expect(FindByMethodClass).to receive(:cached_search_by_guid).with(["foobar"], {}).and_return([])
         expect do
           FindByMethodClass.cached_find_by(:guid => "foobar")
-        end.not_to raise_error(::ActiveRemote::RemoteRecordNotFound)
+        end.not_to raise_error
       end
 
       it "calls cached_find_by_guid with cache options" do
@@ -124,7 +124,7 @@ describe FindByMethodClass do
         expect(FindByMethodClass).to receive(:cached_search_by_guid).with(["foobar"], {}).and_return([])
         expect do
           FindByMethodClass.cached_find_by(:guid => "foobar")
-        end.not_to raise_error(::ActiveRemote::RemoteRecordNotFound)
+        end.not_to raise_error
       end
     end
 
