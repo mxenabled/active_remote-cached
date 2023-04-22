@@ -2,10 +2,9 @@ require 'rubygems'
 require 'bundler'
 Bundler.require(:default, :development, :test)
 
-require 'minitest/mock'
-require 'minitest/spec'
 require 'minitest/autorun'
 require 'minitest/pride'
+require 'mocha/minitest'
 
 class HashCache < Hash
   def exist?(key)
@@ -28,5 +27,3 @@ class HashCache < Hash
     self[key] = value
   end
 end
-
-require 'mocha/api'
