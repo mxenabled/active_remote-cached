@@ -126,5 +126,19 @@ describe ExistMethodClass do
     it "creates 'cached_exist_search_by_client_guid_and_user_guid_and_derp?'" do
       _(ExistMethodClass).must_respond_to("cached_exist_search_by_client_guid_and_user_guid_and_derp?")
     end
+
+    describe "when cache raises upstream failure redis error" do
+      it "returns false" do
+        ::ActiveRemote::Cached.cache.expects(:exist?).raises(::RuntimeError, "upstream failure")
+        _(ExistMethodClass.cached_exist_search_by_guid?(:guid)).must_equal(false)
+      end
+    end
+
+    describe "when cache raises any other kind of error" do
+      it "allows error to pass through" do
+        ::ActiveRemote::Cached.cache.expects(:exist?).raises(::RuntimeError, "kaBOOM")
+        assert_raises(::RuntimeError, "kaBOOM") { ExistMethodClass.cached_exist_search_by_guid?(:guid) }
+      end
+    end
   end
 end
