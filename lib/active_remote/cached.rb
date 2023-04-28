@@ -25,7 +25,7 @@ module ActiveRemote
     end
 
     def self.cache_options
-      ::ActiveRemote::Cached.default_options.except(:cache_error_proc, :handle_cache_error)
+      ::ActiveRemote::Cached.default_options.slice(:expires_in, :namespace, :race_condition_ttl)
     end
 
     def self.default_options(options = nil)
