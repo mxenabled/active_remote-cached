@@ -30,7 +30,8 @@ end
 
 _*This is already done for you in Rails_
 
-Then declare some cache finder methods. Cached finders can be defined for individual fields or defined as composites for mulitple fields
+Then declare some cache finder methods. Cached finders can be defined for individual fields or defined as composites for
+multiple fields
 
 ```ruby
 class Customer < ::ActiveRemote::Base
@@ -42,7 +43,8 @@ class Customer < ::ActiveRemote::Base
 end
 ```
 
-Now that you have a model that has cached finders on it you can use the `cached_search`, `cached_find`, or dynamic cached finder methods on the model to use the cache before you issue the AR search/find method.
+Now that you have a model that has cached finders on it you can use the `cached_search`, `cached_find`, or dynamic
+cached finder methods on the model to use the cache before you issue the AR search/find method.
 
 ```ruby
 customer = ::Customer.cached_find_by_id(1) # => <Customer id=1>
@@ -62,13 +64,14 @@ customer = ::Customer.cached_find_by_name("name") # => NoMethodError
 
 ### Configuring the cache provider
 
-ActiveRemote::Cached relies on an ActiveSupport::Cache-compatible cache provider. The cache is initialized with a simple memory store (defaults to 32MB), but can be overridden via `ActiveRemote::Cached.cache`:
+ActiveRemote::Cached relies on an ActiveSupport::Cache-compatible cache provider. The cache is initialized with a simple
+memory store (defaults to 32MB), but can be overridden via `ActiveRemote::Cached.cache`:
 
 ```ruby
 ActiveRemote::Cached.cache(Your::ActiveSupport::Cache::Compatible::Provider.new)
 ```
 
-In Rails apps, the memory store is replaced the whatever Rails is using as it's cache store.
+In Rails apps, the memory store is replaced with whatever Rails is using as it's cache store.
 
 #### Default options
 
@@ -78,11 +81,19 @@ The default cache options used when interacting with the cache can be specified 
 ActiveRemote::Cached.default_options(:expires_in => 1.hour)
 ```
 
-In Rails apps, the :race_condition_ttl option defaults to 5 seconds.
+In Rails apps, the options are:
+
+| Configuration Option  | Default     | Description                                                                                                                                                     |
+|-----------------------|-------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `:race_condition_ttl` | `5.seconds` | See [ActiveSupport::Cache::Store documentation](https://api.rubyonrails.org/classes/ActiveSupport/Cache/Store.html)                                             |
+| `:expires_in`         | `5.minutes` | See [ActiveSupport::Cache::Store documentation](https://api.rubyonrails.org/classes/ActiveSupport/Cache/Store.html)                                             |
+| `:handle_cache_error` | `false`     | When true, cache errors will be handled and optionally sent to handler and return value will be as if cache missed, when cache errors will raise to application |
+| `:cache_error_proc`   | `nil`       | Can be a proc that accepts a single value, the cache error raised, to be used in any kind of error handling you might want                                      |
 
 #### Local overrides
 
-Each finder as takes an optional options hash that will override the options passed to the caching provider (override from the global defaults setup for ActiveRemote::Cached)
+Each finder takes an optional options hash that will override the options passed to the caching provider (override from
+the global defaults setup for ActiveRemote::Cached)
 
 ```ruby
 customer = ::Customer.cached_find_by_id(1, :expires_in => 15.minutes)

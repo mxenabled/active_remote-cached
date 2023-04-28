@@ -24,6 +24,10 @@ module ActiveRemote
       @cache_provider
     end
 
+    def self.cache_options
+      ::ActiveRemote::Cached.default_options.except(:cache_error_proc, :handle_cache_error)
+    end
+
     def self.default_options(options = nil)
       if options
         @default_options = options
@@ -145,7 +149,7 @@ module ActiveRemote
           #   ::ActiveRemote::Cached.cache.delete([name, user_guid])
           # end
           def self.#{method_name}(#{expanded_method_args}, __active_remote_cached_options = {})
-            __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
+            __active_remote_cached_options = ::ActiveRemote::Cached.cache_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
             namespace = __active_remote_cached_options.delete(:namespace)
             find_cache_key = [
               RUBY_AND_ACTIVE_SUPPORT_VERSION,
@@ -179,7 +183,7 @@ module ActiveRemote
           #   ::ActiveRemote::Cached.cache.exist?([name, user_guid])
           # end
           def self.#{method_name}(#{expanded_method_args}, __active_remote_cached_options = {})
-            __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
+            __active_remote_cached_options = ::ActiveRemote::Cached.cache_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
             namespace = __active_remote_cached_options.delete(:namespace)
             cache_key = [
               RUBY_AND_ACTIVE_SUPPORT_VERSION,
@@ -190,9 +194,6 @@ module ActiveRemote
             ].compact
 
             ::ActiveRemote::Cached.cache.exist?(cache_key)
-          rescue => e
-            return false if e.message.include?("upstream failure")
-            raise
           end
         RUBY
 
@@ -209,7 +210,7 @@ module ActiveRemote
           #   ::ActiveRemote::Cached.cache.exist?([namespace, name, "#search", user_guid])
           # end
           def self.#{method_name}(#{expanded_method_args}, __active_remote_cached_options = {})
-            __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
+            __active_remote_cached_options = ::ActiveRemote::Cached.cache_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
             namespace = __active_remote_cached_options.delete(:namespace)
             cache_key = [
               RUBY_AND_ACTIVE_SUPPORT_VERSION,
@@ -220,9 +221,6 @@ module ActiveRemote
             ].compact
 
             ::ActiveRemote::Cached.cache.exist?(cache_key)
-          rescue => e
-            return false if e.message.include?("upstream failure")
-            raise
           end
         RUBY
 
@@ -241,7 +239,7 @@ module ActiveRemote
 
         self.class_eval <<-RUBY, __FILE__, __LINE__ + 1
           # def self.cached_find_by_user_guid(user_guid, options = {})
-          #   options = ::ActiveRemote::Cached.default_options.merge({}).merge(options)
+          #   options = ::ActiveRemote::Cached.cache_options.merge({}).merge(options)
           #
           #   ::ActiveRemote::Cached.cache.fetch([namespace, name, "#find", user_guid], options) do
           #     self.find(:user_guid => user_guid)
@@ -252,7 +250,7 @@ module ActiveRemote
           # of the result object is maintained for requests/responses
           #
           def self.#{method_name}(#{expanded_method_args}, __active_remote_cached_options = {})
-            __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
+            __active_remote_cached_options = ::ActiveRemote::Cached.cache_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
             namespace = __active_remote_cached_options.delete(:namespace)
             cache_key = [
               RUBY_AND_ACTIVE_SUPPORT_VERSION,
@@ -269,9 +267,6 @@ module ActiveRemote
                 self.find(#{expanded_search_args})
               end
             end
-          rescue => e
-            return self.find(#{expanded_search_args}) if e.message.include?("upstream failure")
-            raise
           end
         RUBY
       end
@@ -288,7 +283,7 @@ module ActiveRemote
 
         self.class_eval <<-RUBY, __FILE__, __LINE__ + 1
           # def self.cached_search_by_user_guid(user_guid, options = {})
-          #   options = ::ActiveRemote::Cached.default_options.merge({}).merge(options)
+          #   options = ::ActiveRemote::Cached.cache_options.merge({}).merge(options)
           #
           #   ::ActiveRemote::Cached.cache.fetch([namespace, name, "#search", user_guid], options) do
           #     if block_given?
@@ -303,7 +298,7 @@ module ActiveRemote
           # of the result object is maintained for requests/responses
           #
           def self.#{method_name}(#{expanded_method_args}, __active_remote_cached_options = {})
-            __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
+            __active_remote_cached_options = ::ActiveRemote::Cached.cache_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
             namespace = __active_remote_cached_options.delete(:namespace)
             cache_key = [
               RUBY_AND_ACTIVE_SUPPORT_VERSION,
@@ -320,9 +315,6 @@ module ActiveRemote
                 self.search(#{expanded_search_args})
               end
             end
-          rescue => e
-            return self.search(#{expanded_search_args}) if e.message.include?("upstream failure")
-            raise
           end
         RUBY
       end
@@ -339,7 +331,7 @@ module ActiveRemote
 
         self.class_eval <<-RUBY, __FILE__, __LINE__ + 1
           # def self.cached_search_by_user_guid!(user_guid, options = {})
-          #   options = ::ActiveRemote::Cached.default_options.merge({}).merge(options)
+          #   options = ::ActiveRemote::Cached.cache_options.merge({}).merge(options)
           #
           #   ::ActiveRemote::Cached.cache.fetch([namespace, name, "#search", user_guid], options) do
           #     results = []
@@ -359,7 +351,7 @@ module ActiveRemote
           # of the result object is maintained for requests/responses
           #
           def self.#{method_name}(#{expanded_method_args}, __active_remote_cached_options = {})
-            __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
+            __active_remote_cached_options = ::ActiveRemote::Cached.cache_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
             namespace = __active_remote_cached_options.delete(:namespace)
             cache_key = [
               RUBY_AND_ACTIVE_SUPPORT_VERSION,
@@ -381,13 +373,6 @@ module ActiveRemote
               raise ::ActiveRemote::RemoteRecordNotFound.new(self.class) if results.first.nil?
               results
             end
-          rescue => e
-            if e.message.include?("upstream failure")
-              results = self.search(#{expanded_search_args})
-              raise ::ActiveRemote::RemoteRecordNotFound.new(self.class) if results.first.nil?
-              return results
-            end
-            raise
           end
         RUBY
       end

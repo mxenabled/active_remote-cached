@@ -7,7 +7,7 @@ require 'minitest/pride'
 require 'mocha/minitest'
 
 class HashCache < Hash
-  def exist?(key)
+  def exist?(key, _options = nil)
     self.has_key?(key)
   end
 
@@ -19,11 +19,11 @@ class HashCache < Hash
     self[key] = yield
   end
 
-  def read(key)
+  def read(key, _options = {})
     self[key]
   end
 
-  def write(key, value)
+  def write(key, value, _options = nil)
     self[key] = value
   end
 end
