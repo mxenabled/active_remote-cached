@@ -25,7 +25,14 @@ module ActiveRemote
     end
 
     def self.cache_options
-      ::ActiveRemote::Cached.default_options.slice(:expires_in, :namespace, :race_condition_ttl)
+      ::ActiveRemote::Cached.default_options.slice(
+        :expires_in,
+        "expires_in",
+        :namespace,
+        "namespace",
+        :race_condition_ttl,
+        "race_condition_ttl"
+      )
     end
 
     def self.default_options(options = nil)

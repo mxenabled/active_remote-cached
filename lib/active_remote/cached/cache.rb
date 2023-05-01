@@ -21,10 +21,7 @@ module ActiveRemote::Cached
       nested_cache_provider.delete(*args)
       super
     rescue => e
-      raise e unless ::ActiveRemote::Cached.default_options[:handle_cache_error]
-      error_proc = ::ActiveRemote::Cached.default_options[:cache_error_proc]
-      error_proc.call(e) if error_proc.respond_to?(:call)
-
+      handle_or_reraise_cache_error(e)
       nil
     end
 
@@ -35,10 +32,7 @@ module ActiveRemote::Cached
     def exist?(*args)
       nested_cache_provider.exist?(*args) || super
     rescue => e
-      raise e unless ::ActiveRemote::Cached.default_options[:handle_cache_error]
-      error_proc = ::ActiveRemote::Cached.default_options[:cache_error_proc]
-      error_proc.call(e) if error_proc.respond_to?(:call)
-
+      handle_or_reraise_cache_error(e)
       false
     end
 
@@ -59,10 +53,7 @@ module ActiveRemote::Cached
     def read(*args)
       nested_cache_provider.read(*args) || super
     rescue => e
-      raise e unless ::ActiveRemote::Cached.default_options[:handle_cache_error]
-      error_proc = ::ActiveRemote::Cached.default_options[:cache_error_proc]
-      error_proc.call(e) if error_proc.respond_to?(:call)
-
+      handle_or_reraise_cache_error(e)
       nil
     end
 
@@ -70,14 +61,17 @@ module ActiveRemote::Cached
       nested_cache_provider.write(*args)
       super
     rescue => e
-      raise e unless ::ActiveRemote::Cached.default_options[:handle_cache_error]
-      error_proc = ::ActiveRemote::Cached.default_options[:cache_error_proc]
-      error_proc.call(e) if error_proc.respond_to?(:call)
-
+      handle_or_reraise_cache_error(e)
       nil
     end
 
   private
+
+    def handle_or_reraise_cache_error(e)
+      raise e unless ::ActiveRemote::Cached.default_options[:handle_cache_error]
+      error_proc = ::ActiveRemote::Cached.default_options[:cache_error_proc]
+      error_proc.call(e) if error_proc.respond_to?(:call)
+    end
 
     def nested_cache_provider
       @nested_cache_provider
