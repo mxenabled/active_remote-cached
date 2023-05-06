@@ -3,10 +3,11 @@ require "active_support/cache"
 require "active_support/concern"
 require "active_support/core_ext/array/extract_options"
 
+require "active_remote"
+require "active_remote/errors"
 require "active_remote/cached/argument_keys"
 require "active_remote/cached/cache"
 require "active_remote/cached/version"
-require "active_remote/errors"
 
 module ActiveRemote
   module Cached
