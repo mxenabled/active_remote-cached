@@ -6,8 +6,8 @@ require 'active_remote/cached/version'
 Gem::Specification.new do |gem|
   gem.name          = "active_remote-cached"
   gem.version       = ActiveRemote::Cached::VERSION
-  gem.authors       = ["Brandon Dewitt"]
-  gem.email         = ["brandonsdewitt@gmail.com"]
+  gem.authors       = ["Brandon Dewitt", "MXDevExperience"]
+  gem.email         = ["brandonsdewitt@gmail.com", "devexperience@mx.com"]
   gem.description   = %q{ Provides "cached" finders and a DSL to enumerate which finders should have cached versions }
   gem.summary       = %q{ Provides a configuration for caching mechanisms and finders on ActiveRemote models that are cached/cacheable }
   gem.homepage      = ""
