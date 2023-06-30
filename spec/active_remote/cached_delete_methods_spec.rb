@@ -15,31 +15,31 @@ end
 describe DeleteMethodClass do
   describe "API" do
     it "creates 'cached_delete_by_guid'" do
-      DeleteMethodClass.must_respond_to("cached_delete_by_guid")
+      _(DeleteMethodClass).must_respond_to("cached_delete_by_guid")
     end
 
     it "creates 'cached_delete_by_user_guid'" do
-      DeleteMethodClass.must_respond_to("cached_delete_by_user_guid")
+      _(DeleteMethodClass).must_respond_to("cached_delete_by_user_guid")
     end
 
     it "creates 'cached_delete_by_user_guid_and_client_guid'" do
-      DeleteMethodClass.must_respond_to("cached_delete_by_user_guid_and_client_guid")
+      _(DeleteMethodClass).must_respond_to("cached_delete_by_user_guid_and_client_guid")
     end
 
     it "creates 'cached_delete_by_client_guid_and_user_guid'" do
-      DeleteMethodClass.must_respond_to("cached_delete_by_client_guid_and_user_guid")
+      _(DeleteMethodClass).must_respond_to("cached_delete_by_client_guid_and_user_guid")
     end
 
     it "creates 'cached_delete_by_derp_and_user_guid_and_client_guid'" do
-      DeleteMethodClass.must_respond_to("cached_delete_by_derp_and_user_guid_and_client_guid")
+      _(DeleteMethodClass).must_respond_to("cached_delete_by_derp_and_user_guid_and_client_guid")
     end
 
     it "creates 'cached_delete_by_client_guid_and_derp_and_user_guid'" do
-      DeleteMethodClass.must_respond_to("cached_delete_by_client_guid_and_derp_and_user_guid")
+      _(DeleteMethodClass).must_respond_to("cached_delete_by_client_guid_and_derp_and_user_guid")
     end
 
     it "creates 'cached_delete_by_client_guid_and_user_guid_and_derp'" do
-      DeleteMethodClass.must_respond_to("cached_delete_by_client_guid_and_user_guid_and_derp")
+      _(DeleteMethodClass).must_respond_to("cached_delete_by_client_guid_and_user_guid_and_derp")
     end
   end
 end

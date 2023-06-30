@@ -20,6 +20,9 @@ module ActiveRemote::Cached
     def delete(*args)
       nested_cache_provider.delete(*args)
       super
+    rescue => e
+      handle_or_reraise_cache_error(e)
+      nil
     end
 
     def enable_nested_caching!
@@ -28,10 +31,17 @@ module ActiveRemote::Cached
 
     def exist?(*args)
       nested_cache_provider.exist?(*args) || super
+    rescue => e
+      handle_or_reraise_cache_error(e)
+      false
     end
 
     def fetch(name, options = {})
-      fetch_value = nested_cache_provider.fetch(name, options) { super }
+      fetch_value = read(name, options)
+      if fetch_value.nil?
+        fetch_value = super if block_given?
+        write(name, fetch_value, options) if valid_fetched_value?(fetch_value, options)
+      end
 
       unless valid_fetched_value?(fetch_value, options)
         delete(name)
@@ -42,14 +52,26 @@ module ActiveRemote::Cached
 
     def read(*args)
       nested_cache_provider.read(*args) || super
+    rescue => e
+      handle_or_reraise_cache_error(e)
+      nil
     end
 
     def write(*args)
       nested_cache_provider.write(*args)
       super
+    rescue => e
+      handle_or_reraise_cache_error(e)
+      nil
     end
 
   private
+
+    def handle_or_reraise_cache_error(e)
+      raise e unless ::ActiveRemote::Cached.default_options[:handle_cache_error]
+      error_proc = ::ActiveRemote::Cached.default_options[:cache_error_proc]
+      error_proc.call(e) if error_proc.respond_to?(:call)
+    end
 
     def nested_cache_provider
       @nested_cache_provider
