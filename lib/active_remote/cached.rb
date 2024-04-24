@@ -47,7 +47,7 @@ module ActiveRemote
 
       def cached_find(argument_hash, options = {})
         method_name = _cached_find_method_name(argument_hash.keys)
-        arguments = argument_hash.values
+        arguments = argument_hash.keys.sort.map { |k| argument_hash[k] }
 
         if block_given?
           __send__(method_name, *arguments, options) do
@@ -60,7 +60,7 @@ module ActiveRemote
 
       def cached_search(argument_hash, options = {})
         method_name = _cached_search_method_name(argument_hash.keys)
-        arguments = argument_hash.values
+        arguments = argument_hash.keys.sort.map { |k| argument_hash[k] }
 
         if block_given?
           __send__(method_name, *arguments, options) do
@@ -82,57 +82,59 @@ module ActiveRemote
         # and define each finder/searcher
         #
         cached_finder_key_set.permutation do |arguments|
-          delete_method_name = _cached_delete_method_name(arguments)
-          exist_find_method_name = _cached_exist_find_method_name(arguments)
-          exist_search_method_name = _cached_exist_search_method_name(arguments)
-          find_method_name = _cached_find_method_name(arguments)
-          search_method_name = _cached_search_method_name(arguments)
-          search_bang_method_name = "#{search_method_name}!"
+          
+        end
 
-          unless self.respond_to?(delete_method_name)
-            _define_cached_delete_method(delete_method_name, arguments, options)
-          end
+        delete_method_name = _cached_delete_method_name(cached_finder_key_set)
+        exist_find_method_name = _cached_exist_find_method_name(cached_finder_key_set)
+        exist_search_method_name = _cached_exist_search_method_name(cached_finder_key_set)
+        find_method_name = _cached_find_method_name(cached_finder_key_set)
+        search_method_name = _cached_search_method_name(cached_finder_key_set)
+        search_bang_method_name = "#{search_method_name}!"
 
-          unless self.respond_to?(exist_find_method_name)
-            _define_cached_exist_find_method(exist_find_method_name, arguments, options)
-          end
+        unless self.respond_to?(delete_method_name)
+          _define_cached_delete_method(delete_method_name, cached_finder_key_set, options)
+        end
 
-          unless self.respond_to?(exist_search_method_name)
-            _define_cached_exist_search_method(exist_search_method_name, arguments, options)
-          end
+        unless self.respond_to?(exist_find_method_name)
+          _define_cached_exist_find_method(exist_find_method_name, cached_finder_key_set, options)
+        end
 
-          unless self.respond_to?(find_method_name)
-            _define_cached_find_method(find_method_name, arguments, options)
-          end
+        unless self.respond_to?(exist_search_method_name)
+          _define_cached_exist_search_method(exist_search_method_name, cached_finder_key_set, options)
+        end
 
-          unless self.respond_to?(search_bang_method_name)
-            _define_cached_search_bang_method(search_bang_method_name, arguments, options)
-          end
+        unless self.respond_to?(find_method_name)
+          _define_cached_find_method(find_method_name, cached_finder_key_set, options)
+        end
 
-          unless self.respond_to?(search_method_name)
-            _define_cached_search_method(search_method_name, arguments, options)
-          end
+        unless self.respond_to?(search_bang_method_name)
+          _define_cached_search_bang_method(search_bang_method_name, cached_finder_key_set, options)
+        end
+
+        unless self.respond_to?(search_method_name)
+          _define_cached_search_method(search_method_name, cached_finder_key_set, options)
         end
       end
 
       def _cached_delete_method_name(arguments)
-        "cached_delete_by_#{arguments.join('_and_')}"
+        "cached_delete_by_#{arguments.sort.join('_and_')}"
       end
 
       def _cached_exist_find_method_name(arguments)
-        "cached_exist_find_by_#{arguments.join('_and_')}"
+        "cached_exist_find_by_#{arguments.sort.join('_and_')}"
       end
 
       def _cached_exist_search_method_name(arguments)
-        "cached_exist_search_by_#{arguments.join('_and_')}"
+        "cached_exist_search_by_#{arguments.sort.join('_and_')}"
       end
 
       def _cached_find_method_name(arguments)
-        "cached_find_by_#{arguments.join('_and_')}"
+        "cached_find_by_#{arguments.sort.join('_and_')}"
       end
 
       def _cached_search_method_name(arguments)
-        "cached_search_by_#{arguments.join('_and_')}"
+        "cached_search_by_#{arguments.sort.join('_and_')}"
       end
 
       def _define_cached_delete_method(method_name, *method_arguments, cached_finder_options)

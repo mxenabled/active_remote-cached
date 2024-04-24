@@ -30,12 +30,12 @@ describe ExistMethodClass do
       ExistMethodClass.must_respond_to("cached_exist_search_by_user_guid")
     end
 
-    it "creates 'cached_exist_find_by_user_guid_and_client_guid'" do
-      ExistMethodClass.must_respond_to("cached_exist_find_by_user_guid_and_client_guid")
+    it "creates 'cached_exist_find_by_client_guid_and_user_guid'" do
+      ExistMethodClass.must_respond_to("cached_exist_find_by_client_guid_and_user_guid")
     end
 
-    it "creates 'cached_exist_search_by_user_guid_and_client_guid'" do
-      ExistMethodClass.must_respond_to("cached_exist_search_by_user_guid_and_client_guid")
+    it "creates 'cached_exist_search_by_client_guid_and_user_guid'" do
+      ExistMethodClass.must_respond_to("cached_exist_search_by_client_guid_and_user_guid")
     end
 
     it "creates 'cached_exist_find_by_client_guid_and_user_guid'" do
@@ -46,12 +46,12 @@ describe ExistMethodClass do
       ExistMethodClass.must_respond_to("cached_exist_search_by_client_guid_and_user_guid")
     end
 
-    it "creates 'cached_exist_find_by_derp_and_user_guid_and_client_guid'" do
-      ExistMethodClass.must_respond_to("cached_exist_find_by_derp_and_user_guid_and_client_guid")
+    it "creates 'cached_exist_find_by_client_guid_and_derp_and_user_guid'" do
+      ExistMethodClass.must_respond_to("cached_exist_find_by_client_guid_and_derp_and_user_guid")
     end
 
-    it "creates 'cached_exist_search_by_derp_and_user_guid_and_client_guid'" do
-      ExistMethodClass.must_respond_to("cached_exist_search_by_derp_and_user_guid_and_client_guid")
+    it "creates 'cached_exist_search_by_client_guid_and_derp_and_user_guid'" do
+      ExistMethodClass.must_respond_to("cached_exist_search_by_client_guid_and_derp_and_user_guid")
     end
 
     it "creates 'cached_exist_find_by_client_guid_and_derp_and_user_guid'" do
@@ -62,12 +62,12 @@ describe ExistMethodClass do
       ExistMethodClass.must_respond_to("cached_exist_search_by_client_guid_and_derp_and_user_guid")
     end
 
-    it "creates 'cached_exist_find_by_client_guid_and_user_guid_and_derp'" do
-      ExistMethodClass.must_respond_to("cached_exist_find_by_client_guid_and_user_guid_and_derp")
+    it "creates 'cached_exist_find_by_client_guid_and_derp_and_user_guid'" do
+      ExistMethodClass.must_respond_to("cached_exist_find_by_client_guid_and_derp_and_user_guid")
     end
 
-    it "creates 'cached_exist_search_by_client_guid_and_user_guid_and_derp'" do
-      ExistMethodClass.must_respond_to("cached_exist_search_by_client_guid_and_user_guid_and_derp")
+    it "creates 'cached_exist_search_by_client_guid_and_derp_and_user_guid'" do
+      ExistMethodClass.must_respond_to("cached_exist_search_by_client_guid_and_derp_and_user_guid")
     end
 
     # ? based methods
@@ -87,12 +87,12 @@ describe ExistMethodClass do
       ExistMethodClass.must_respond_to("cached_exist_search_by_user_guid?")
     end
 
-    it "creates 'cached_exist_find_by_user_guid_and_client_guid?'" do
-      ExistMethodClass.must_respond_to("cached_exist_find_by_user_guid_and_client_guid?")
+    it "creates 'cached_exist_find_by_client_guid_and_user_guid?'" do
+      ExistMethodClass.must_respond_to("cached_exist_find_by_client_guid_and_user_guid?")
     end
 
-    it "creates 'cached_exist_search_by_user_guid_and_client_guid?'" do
-      ExistMethodClass.must_respond_to("cached_exist_search_by_user_guid_and_client_guid?")
+    it "creates 'cached_exist_search_by_client_guid_and_user_guid?'" do
+      ExistMethodClass.must_respond_to("cached_exist_search_by_client_guid_and_user_guid?")
     end
 
     it "creates 'cached_exist_find_by_client_guid_and_user_guid?'" do
@@ -103,12 +103,12 @@ describe ExistMethodClass do
       ExistMethodClass.must_respond_to("cached_exist_search_by_client_guid_and_user_guid?")
     end
 
-    it "creates 'cached_exist_find_by_derp_and_user_guid_and_client_guid?'" do
-      ExistMethodClass.must_respond_to("cached_exist_find_by_derp_and_user_guid_and_client_guid?")
+    it "creates 'cached_exist_find_by_client_guid_and_derp_and_user_guid?'" do
+      ExistMethodClass.must_respond_to("cached_exist_find_by_client_guid_and_derp_and_user_guid?")
     end
 
-    it "creates 'cached_exist_search_by_derp_and_user_guid_and_client_guid?'" do
-      ExistMethodClass.must_respond_to("cached_exist_search_by_derp_and_user_guid_and_client_guid?")
+    it "creates 'cached_exist_search_by_client_guid_and_derp_and_user_guid?'" do
+      ExistMethodClass.must_respond_to("cached_exist_search_by_client_guid_and_derp_and_user_guid?")
     end
 
     it "creates 'cached_exist_find_by_client_guid_and_derp_and_user_guid?'" do
@@ -119,12 +119,12 @@ describe ExistMethodClass do
       ExistMethodClass.must_respond_to("cached_exist_search_by_client_guid_and_derp_and_user_guid?")
     end
 
-    it "creates 'cached_exist_find_by_client_guid_and_user_guid_and_derp?'" do
-      ExistMethodClass.must_respond_to("cached_exist_find_by_client_guid_and_user_guid_and_derp?")
+    it "creates 'cached_exist_find_by_client_guid_and_derp_and_user_guid?'" do
+      ExistMethodClass.must_respond_to("cached_exist_find_by_client_guid_and_derp_and_user_guid?")
     end
 
-    it "creates 'cached_exist_search_by_client_guid_and_user_guid_and_derp?'" do
-      ExistMethodClass.must_respond_to("cached_exist_search_by_client_guid_and_user_guid_and_derp?")
+    it "creates 'cached_exist_search_by_client_guid_and_derp_and_user_guid?'" do
+      ExistMethodClass.must_respond_to("cached_exist_search_by_client_guid_and_derp_and_user_guid?")
     end
   end
 end

@@ -27,24 +27,12 @@ describe FindMethodClass do
       FindMethodClass.must_respond_to("cached_find_by_user_guid")
     end
 
-    it "creates 'cached_find_by_user_guid_and_client_guid'" do
-      FindMethodClass.must_respond_to("cached_find_by_user_guid_and_client_guid")
-    end
-
     it "creates 'cached_find_by_client_guid_and_user_guid'" do
       FindMethodClass.must_respond_to("cached_find_by_client_guid_and_user_guid")
     end
 
-    it "creates 'cached_find_by_derp_and_user_guid_and_client_guid'" do
-      FindMethodClass.must_respond_to("cached_find_by_derp_and_user_guid_and_client_guid")
-    end
-
     it "creates 'cached_find_by_client_guid_and_derp_and_user_guid'" do
       FindMethodClass.must_respond_to("cached_find_by_client_guid_and_derp_and_user_guid")
-    end
-
-    it "creates 'cached_find_by_client_guid_and_user_guid_and_derp'" do
-      FindMethodClass.must_respond_to("cached_find_by_client_guid_and_user_guid_and_derp")
     end
   end
 
