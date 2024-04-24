@@ -77,14 +77,6 @@ module ActiveRemote
       def _create_cached_finder_for(cached_finder_key, options = {})
         cached_finder_key_set = [ cached_finder_key ].flatten.sort
 
-        ##
-        # Run each permutation of the arguments passed in
-        # and define each finder/searcher
-        #
-        cached_finder_key_set.permutation do |arguments|
-          
-        end
-
         delete_method_name = _cached_delete_method_name(cached_finder_key_set)
         exist_find_method_name = _cached_exist_find_method_name(cached_finder_key_set)
         exist_search_method_name = _cached_exist_search_method_name(cached_finder_key_set)
