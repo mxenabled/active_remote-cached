@@ -33,6 +33,11 @@ module ActiveRemote
     end
 
     module ClassMethods
+      def cached_methods
+        @cached_methods ||= []
+        @cached_methods
+      end
+
       def cached_finders_for(*cached_finder_keys)
         options = cached_finder_keys.extract_options!
 
@@ -47,7 +52,7 @@ module ActiveRemote
 
       def cached_find(argument_hash, options = {})
         method_name = _cached_find_method_name(argument_hash.keys)
-        arguments = argument_hash.values
+        arguments = argument_hash.keys.sort.map { |k| argument_hash[k] }
 
         if block_given?
           __send__(method_name, *arguments, options) do
@@ -60,7 +65,7 @@ module ActiveRemote
 
       def cached_search(argument_hash, options = {})
         method_name = _cached_search_method_name(argument_hash.keys)
-        arguments = argument_hash.values
+        arguments = argument_hash.keys.sort.map { |k| argument_hash[k] }
 
         if block_given?
           __send__(method_name, *arguments, options) do
@@ -71,74 +76,125 @@ module ActiveRemote
         end
       end
 
+      def method_missing(m, *args, &block)
+        method_name = _method_missing_name(m)
+
+        if method_name.nil? || !cached_methods.include?(method_name.to_s)
+          super(m, *args, &block)
+        else
+          new_args = _args_in_sorted_order(m, args)
+          __send__(method_name, *new_args, &block)
+        end
+      end
+
+      def respond_to_missing?(m, include_private = false)
+        !_method_missing_name(m).nil? || super
+      end
+
       ##
       # Underscored Methods
       #
+      def _method_missing_name(m)
+        regex = /(cached_(?:delete|exist_search|search|exist_find|find)_by_)([a-zA-Z_]*)(!|\?)?/
+
+        if m.to_s =~ regex
+          params = $2.split("_and_")
+          "#{$1}#{params.sort.join("_and_")}#{$3}".to_sym
+        else
+          nil
+        end
+      end
+
+      def _args_in_sorted_order(m, args)
+        regex = /cached_(?:delete|exist_search|search|exist_find|find)_by_([a-zA-Z_]*)(!|\?)?/
+
+        method_name = _method_missing_name(m)
+
+        match_1 = m.match(regex)
+        match_2 = method_name.match(regex)
+
+        args_in_order = []
+
+        if match_1[1] && match_2[1]
+          orignal_args_name = match_1[1].split("_and_")
+          args_names_in_order = match_2[1].split("_and_")
+
+          args_names_in_order.each do |arg_name|
+            index = orignal_args_name.index(arg_name)
+            args_in_order << args[index]
+          end
+
+          if args.size > args_in_order.size
+            # Add options if passed
+            args_in_order << args.last
+          end
+
+          args_in_order
+        else
+          args
+        end
+      end
+
       def _create_cached_finder_for(cached_finder_key, options = {})
         cached_finder_key_set = [ cached_finder_key ].flatten.sort
 
-        ##
-        # Run each permutation of the arguments passed in
-        # and define each finder/searcher
-        #
-        cached_finder_key_set.permutation do |arguments|
-          delete_method_name = _cached_delete_method_name(arguments)
-          exist_find_method_name = _cached_exist_find_method_name(arguments)
-          exist_search_method_name = _cached_exist_search_method_name(arguments)
-          find_method_name = _cached_find_method_name(arguments)
-          search_method_name = _cached_search_method_name(arguments)
-          search_bang_method_name = "#{search_method_name}!"
+        delete_method_name = _cached_delete_method_name(cached_finder_key_set)
+        exist_find_method_name = _cached_exist_find_method_name(cached_finder_key_set)
+        exist_search_method_name = _cached_exist_search_method_name(cached_finder_key_set)
+        find_method_name = _cached_find_method_name(cached_finder_key_set)
+        search_method_name = _cached_search_method_name(cached_finder_key_set)
+        search_bang_method_name = "#{search_method_name}!"
 
-          unless self.respond_to?(delete_method_name)
-            _define_cached_delete_method(delete_method_name, arguments, options)
-          end
+        unless cached_methods.include?(delete_method_name)
+          _define_cached_delete_method(delete_method_name, cached_finder_key_set, options)
+        end
+        
+        unless cached_methods.include?(exist_find_method_name)
+          _define_cached_exist_find_method(exist_find_method_name, cached_finder_key_set, options)
+        end
 
-          unless self.respond_to?(exist_find_method_name)
-            _define_cached_exist_find_method(exist_find_method_name, arguments, options)
-          end
+        unless cached_methods.include?(exist_search_method_name)
+          _define_cached_exist_search_method(exist_search_method_name, cached_finder_key_set, options)
+        end
 
-          unless self.respond_to?(exist_search_method_name)
-            _define_cached_exist_search_method(exist_search_method_name, arguments, options)
-          end
+        unless cached_methods.include?(find_method_name)
+          _define_cached_find_method(find_method_name, cached_finder_key_set, options)
+        end
 
-          unless self.respond_to?(find_method_name)
-            _define_cached_find_method(find_method_name, arguments, options)
-          end
+        unless cached_methods.include?(search_bang_method_name)
+          _define_cached_search_bang_method(search_bang_method_name, cached_finder_key_set, options)
+        end
 
-          unless self.respond_to?(search_bang_method_name)
-            _define_cached_search_bang_method(search_bang_method_name, arguments, options)
-          end
-
-          unless self.respond_to?(search_method_name)
-            _define_cached_search_method(search_method_name, arguments, options)
-          end
+        unless cached_methods.include?(search_method_name)
+          _define_cached_search_method(search_method_name, cached_finder_key_set, options)
         end
       end
 
       def _cached_delete_method_name(arguments)
-        "cached_delete_by_#{arguments.join('_and_')}"
+        "cached_delete_by_#{arguments.sort.join('_and_')}"
       end
 
       def _cached_exist_find_method_name(arguments)
-        "cached_exist_find_by_#{arguments.join('_and_')}"
+        "cached_exist_find_by_#{arguments.sort.join('_and_')}"
       end
 
       def _cached_exist_search_method_name(arguments)
-        "cached_exist_search_by_#{arguments.join('_and_')}"
+        "cached_exist_search_by_#{arguments.sort.join('_and_')}"
       end
 
       def _cached_find_method_name(arguments)
-        "cached_find_by_#{arguments.join('_and_')}"
+        "cached_find_by_#{arguments.sort.join('_and_')}"
       end
 
       def _cached_search_method_name(arguments)
-        "cached_search_by_#{arguments.join('_and_')}"
+        "cached_search_by_#{arguments.sort.join('_and_')}"
       end
 
       def _define_cached_delete_method(method_name, *method_arguments, cached_finder_options)
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(",")
         sorted_method_args = method_arguments.sort.join(",")
+        cached_methods << method_name
 
         self.class_eval <<-RUBY, __FILE__, __LINE__ + 1
           # def self.cached_delete_by_user_guid(user_guid, options = {})
@@ -173,6 +229,7 @@ module ActiveRemote
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(",")
         sorted_method_args = method_arguments.sort.join(",")
+        cached_methods << method_name
 
         self.class_eval <<-RUBY, __FILE__, __LINE__ + 1
           # def self.cached_exist_find_by_user_guid(user_guid, options = {})
@@ -200,6 +257,7 @@ module ActiveRemote
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(",")
         sorted_method_args = method_arguments.sort.join(",")
+        cached_methods << method_name
 
         self.class_eval <<-RUBY, __FILE__, __LINE__ + 1
           # def self.cached_exist_search_by_user_guid(user_guid, options = {})
@@ -227,6 +285,7 @@ module ActiveRemote
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(",")
         sorted_method_args = method_arguments.sort.join(",")
+        cached_methods << method_name
 
         expanded_search_args = ""
         method_arguments.each do |method_argument|
@@ -271,6 +330,7 @@ module ActiveRemote
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(",")
         sorted_method_args = method_arguments.sort.join(",")
+        cached_methods << method_name
 
         expanded_search_args = ""
         method_arguments.each do |method_argument|
@@ -319,6 +379,7 @@ module ActiveRemote
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(",")
         sorted_method_args = method_arguments.sort.join(",")
+        cached_methods << method_name
 
         expanded_search_args = ""
         method_arguments.each do |method_argument|
