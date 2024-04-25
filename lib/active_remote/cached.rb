@@ -79,7 +79,7 @@ module ActiveRemote
       def method_missing(m, *args, &block)
         method_name = _method_missing_name(m)
 
-        if method_name.nil? || !cached_methods.include?(method_name.to_s)
+        if method_name.nil?
           super(m, *args, &block)
         else
           new_args = _args_in_sorted_order(m, args)
