@@ -84,7 +84,6 @@ module ActiveRemote
         else
           new_args = _args_in_sorted_order(m, args)
           __send__(method_name, *new_args, &block)
-          #super(m, *args, &block)  Institution.cached_find_by_institution_type_and_guid(:institution_type => 1, :guid => "asdf")
         end
       end
 
@@ -337,7 +336,7 @@ module ActiveRemote
         method_arguments.each do |method_argument|
           expanded_search_args << ":#{method_argument} => #{method_argument},"
         end
-        
+
         self.class_eval <<-RUBY, __FILE__, __LINE__ + 1
           # def self.cached_search_by_user_guid(user_guid, options = {})
           #   options = ::ActiveRemote::Cached.default_options.merge({}).merge(options)
