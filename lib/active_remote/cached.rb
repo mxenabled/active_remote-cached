@@ -77,22 +77,25 @@ module ActiveRemote
       end
 
       def method_missing(m, *args, &block)
-        method_name = method_missing_name(m)
+        method_name = _method_missing_name(m)
 
         if method_name.nil? || !cached_methods.include?(method_name.to_s)
           super(m, *args, &block)
         else
-          new_args = args_in_order(m, args)
+          new_args = _args_in_sorted_order(m, args)
           __send__(method_name, *new_args, &block)
           #super(m, *args, &block)  Institution.cached_find_by_institution_type_and_guid(:institution_type => 1, :guid => "asdf")
         end
       end
 
       def respond_to_missing?(m, include_private = false)
-        !method_missing_name(m).nil? || super
+        !_method_missing_name(m).nil? || super
       end
 
-      def method_missing_name(m)
+      ##
+      # Underscored Methods
+      #
+      def _method_missing_name(m)
         regex = /(cached_(?:delete|exist_search|search|exist_find|find)_by_)([a-zA-Z_]*)(!|\?)?/
 
         if m.to_s =~ regex
@@ -103,10 +106,10 @@ module ActiveRemote
         end
       end
 
-      def args_in_order(m, args)
+      def _args_in_sorted_order(m, args)
         regex = /cached_(?:delete|exist_search|search|exist_find|find)_by_([a-zA-Z_]*)(!|\?)?/
 
-        method_name = method_missing_name(m)
+        method_name = _method_missing_name(m)
 
         match_1 = m.match(regex)
         match_2 = method_name.match(regex)
@@ -129,13 +132,10 @@ module ActiveRemote
 
           args_in_order
         else
-          nil
+          args
         end
       end
 
-      ##
-      # Underscored Methods
-      #
       def _create_cached_finder_for(cached_finder_key, options = {})
         cached_finder_key_set = [ cached_finder_key ].flatten.sort
 
