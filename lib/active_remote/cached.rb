@@ -88,7 +88,13 @@ module ActiveRemote
       end
 
       def respond_to_missing?(m, include_private = false)
-        !_method_missing_name(m).nil? || super
+        method_name = _method_missing_name(m)
+
+        if !method_name.nil? && cached_methods.include?(method_name.to_s)
+          true
+        else
+          super
+        end
       end
 
       ##
@@ -230,6 +236,7 @@ module ActiveRemote
         expanded_method_args = method_arguments.join(",")
         sorted_method_args = method_arguments.sort.join(",")
         cached_methods << method_name
+        cached_methods << "#{method_name}?"
 
         self.class_eval <<-RUBY, __FILE__, __LINE__ + 1
           # def self.cached_exist_find_by_user_guid(user_guid, options = {})
@@ -258,6 +265,7 @@ module ActiveRemote
         expanded_method_args = method_arguments.join(",")
         sorted_method_args = method_arguments.sort.join(",")
         cached_methods << method_name
+        cached_methods << "#{method_name}?"
 
         self.class_eval <<-RUBY, __FILE__, __LINE__ + 1
           # def self.cached_exist_search_by_user_guid(user_guid, options = {})
