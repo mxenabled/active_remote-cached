@@ -32,16 +32,28 @@ describe SearchMethodClass do
       SearchMethodClass.must_respond_to("cached_search_by_user_guid")
     end
 
+    it "creates 'cached_search_by_user_guid_and_client_guid'" do
+      SearchMethodClass.must_respond_to("cached_search_by_user_guid_and_client_guid")
+    end
+
     it "creates 'cached_search_by_client_guid_and_user_guid'" do
       SearchMethodClass.must_respond_to("cached_search_by_client_guid_and_user_guid")
+    end
+
+    it "creates 'cached_search_by_derp_and_user_guid_and_client_guid'" do
+      SearchMethodClass.must_respond_to("cached_search_by_derp_and_user_guid_and_client_guid")
     end
 
     it "creates 'cached_search_by_client_guid_and_derp_and_user_guid'" do
       SearchMethodClass.must_respond_to("cached_search_by_client_guid_and_derp_and_user_guid")
     end
 
-    it "creates 'cached_search_by_client_guid_and_derp_and_user_guid!'" do
-      SearchMethodClass.must_respond_to("cached_search_by_client_guid_and_derp_and_user_guid!")
+    it "creates 'cached_search_by_client_guid_and_user_guid_and_derp'" do
+      SearchMethodClass.must_respond_to("cached_search_by_client_guid_and_user_guid_and_derp")
+    end
+
+    it "creates 'cached_search_by_client_guid_and_user_guid_and_derp!'" do
+      SearchMethodClass.must_respond_to("cached_search_by_client_guid_and_user_guid_and_derp!")
     end
   end
 

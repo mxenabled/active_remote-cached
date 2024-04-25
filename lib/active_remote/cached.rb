@@ -33,6 +33,11 @@ module ActiveRemote
     end
 
     module ClassMethods
+      def cached_methods
+        @cached_methods ||= []
+        @cached_methods
+      end
+
       def cached_finders_for(*cached_finder_keys)
         options = cached_finder_keys.extract_options!
 
@@ -71,6 +76,63 @@ module ActiveRemote
         end
       end
 
+      def method_missing(m, *args, &block)
+        method_name = method_missing_name(m)
+
+        if method_name.nil? || !cached_methods.include?(method_name.to_s)
+          super(m, *args, &block)
+        else
+          new_args = args_in_order(m, args)
+          __send__(method_name, *new_args, &block)
+          #super(m, *args, &block)  Institution.cached_find_by_institution_type_and_guid(:institution_type => 1, :guid => "asdf")
+        end
+      end
+
+      def respond_to_missing?(m, include_private = false)
+        !method_missing_name(m).nil? || super
+      end
+
+      def method_missing_name(m)
+        regex = /(cached_(?:delete|exist_search|search|exist_find|find)_by_)([a-zA-Z_]*)(!|\?)?/
+
+        if m.to_s =~ regex
+          params = $2.split("_and_")
+          "#{$1}#{params.sort.join("_and_")}#{$3}".to_sym
+        else
+          nil
+        end
+      end
+
+      def args_in_order(m, args)
+        regex = /cached_(?:delete|exist_search|search|exist_find|find)_by_([a-zA-Z_]*)(!|\?)?/
+
+        method_name = method_missing_name(m)
+
+        match_1 = m.match(regex)
+        match_2 = method_name.match(regex)
+
+        args_in_order = []
+
+        if match_1[1] && match_2[1]
+          orignal_args_name = match_1[1].split("_and_")
+          args_names_in_order = match_2[1].split("_and_")
+
+          args_names_in_order.each do |arg_name|
+            index = orignal_args_name.index(arg_name)
+            args_in_order << args[index]
+          end
+
+          if args.size > args_in_order.size
+            # Add options if passed
+            args_in_order << args.last
+          end
+
+          args_in_order
+        else
+          nil
+        end
+      end
+
       ##
       # Underscored Methods
       #
@@ -84,27 +146,27 @@ module ActiveRemote
         search_method_name = _cached_search_method_name(cached_finder_key_set)
         search_bang_method_name = "#{search_method_name}!"
 
-        unless self.respond_to?(delete_method_name)
+        unless cached_methods.include?(delete_method_name)
           _define_cached_delete_method(delete_method_name, cached_finder_key_set, options)
         end
-
-        unless self.respond_to?(exist_find_method_name)
+        
+        unless cached_methods.include?(exist_find_method_name)
           _define_cached_exist_find_method(exist_find_method_name, cached_finder_key_set, options)
         end
 
-        unless self.respond_to?(exist_search_method_name)
+        unless cached_methods.include?(exist_search_method_name)
           _define_cached_exist_search_method(exist_search_method_name, cached_finder_key_set, options)
         end
 
-        unless self.respond_to?(find_method_name)
+        unless cached_methods.include?(find_method_name)
           _define_cached_find_method(find_method_name, cached_finder_key_set, options)
         end
 
-        unless self.respond_to?(search_bang_method_name)
+        unless cached_methods.include?(search_bang_method_name)
           _define_cached_search_bang_method(search_bang_method_name, cached_finder_key_set, options)
         end
 
-        unless self.respond_to?(search_method_name)
+        unless cached_methods.include?(search_method_name)
           _define_cached_search_method(search_method_name, cached_finder_key_set, options)
         end
       end
@@ -133,6 +195,7 @@ module ActiveRemote
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(",")
         sorted_method_args = method_arguments.sort.join(",")
+        cached_methods << method_name
 
         self.class_eval <<-RUBY, __FILE__, __LINE__ + 1
           # def self.cached_delete_by_user_guid(user_guid, options = {})
@@ -167,6 +230,7 @@ module ActiveRemote
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(",")
         sorted_method_args = method_arguments.sort.join(",")
+        cached_methods << method_name
 
         self.class_eval <<-RUBY, __FILE__, __LINE__ + 1
           # def self.cached_exist_find_by_user_guid(user_guid, options = {})
@@ -194,6 +258,7 @@ module ActiveRemote
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(",")
         sorted_method_args = method_arguments.sort.join(",")
+        cached_methods << method_name
 
         self.class_eval <<-RUBY, __FILE__, __LINE__ + 1
           # def self.cached_exist_search_by_user_guid(user_guid, options = {})
@@ -221,6 +286,7 @@ module ActiveRemote
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(",")
         sorted_method_args = method_arguments.sort.join(",")
+        cached_methods << method_name
 
         expanded_search_args = ""
         method_arguments.each do |method_argument|
@@ -265,12 +331,13 @@ module ActiveRemote
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(",")
         sorted_method_args = method_arguments.sort.join(",")
+        cached_methods << method_name
 
         expanded_search_args = ""
         method_arguments.each do |method_argument|
           expanded_search_args << ":#{method_argument} => #{method_argument},"
         end
-
+        
         self.class_eval <<-RUBY, __FILE__, __LINE__ + 1
           # def self.cached_search_by_user_guid(user_guid, options = {})
           #   options = ::ActiveRemote::Cached.default_options.merge({}).merge(options)
@@ -313,6 +380,7 @@ module ActiveRemote
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(",")
         sorted_method_args = method_arguments.sort.join(",")
+        cached_methods << method_name
 
         expanded_search_args = ""
         method_arguments.each do |method_argument|
