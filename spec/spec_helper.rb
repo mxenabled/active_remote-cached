@@ -1,21 +1,16 @@
+# frozen_string_literal: true
+
 require 'rubygems'
 require 'bundler'
 Bundler.require(:default, :development, :test)
 
-require 'minitest/mock'
-require 'minitest/spec'
-require 'minitest/autorun'
-require 'minitest/pride'
-
 class HashCache < Hash
   def exist?(key)
-    self.has_key?(key)
+    key?(key)
   end
 
-  def fetch(key, options = {}, &blk)
-    if self.has_key?(key)
-      return self[key]
-    end
+  def fetch(key, _options = {})
+    return self[key] if key?(key)
 
     self[key] = yield
   end
