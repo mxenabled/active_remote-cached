@@ -17,11 +17,12 @@ Gem::Specification.new do |gem|
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
   gem.require_paths = ["lib"]
 
-  gem.add_dependency "active_remote"
+  gem.add_dependency "active_remote", ">= 6.1"
   gem.add_dependency "activesupport"
 
   gem.add_development_dependency "bundler"
   gem.add_development_dependency "mocha"
   gem.add_development_dependency "pry"
   gem.add_development_dependency "rake"
+  gem.add_development_dependency "rspec", ">= 3.0"
 end

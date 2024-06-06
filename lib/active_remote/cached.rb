@@ -154,7 +154,7 @@ module ActiveRemote
         unless cached_methods.include?(delete_method_name)
           _define_cached_delete_method(delete_method_name, cached_finder_key_set, options)
         end
-        
+
         unless cached_methods.include?(exist_find_method_name)
           _define_cached_exist_find_method(exist_find_method_name, cached_finder_key_set, options)
         end

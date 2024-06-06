@@ -2,11 +2,6 @@ require 'rubygems'
 require 'bundler'
 Bundler.require(:default, :development, :test)
 
-require 'minitest/mock'
-require 'minitest/spec'
-require 'minitest/autorun'
-require 'minitest/pride'
-
 class HashCache < Hash
   def exist?(key)
     self.has_key?(key)
