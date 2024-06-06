@@ -1,19 +1,26 @@
+# frozen_string_literal: true
+
 require 'spec_helper'
 
 class ExistMethodClass
   include ::ActiveRemote::Cached
 
-  def self.find; nil; end
-  def self.search; nil; end
+  def self.find
+    nil
+  end
+
+  def self.search
+    nil
+  end
 
   cached_finders_for :guid
   cached_finders_for :guid, :user_guid
-  cached_finders_for [:user_guid, :client_guid]
-  cached_finders_for [:derp, :user_guid, :client_guid]
+  cached_finders_for %i[user_guid client_guid]
+  cached_finders_for %i[derp user_guid client_guid]
 end
 
 describe ExistMethodClass do
-  describe "API" do
+  describe 'API' do
     it "creates 'cached_exist_find_by_guid'" do
       expect(ExistMethodClass).to respond_to(:cached_exist_find_by_guid)
     end
