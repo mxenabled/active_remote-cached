@@ -15,7 +15,7 @@ Gem::Specification.new do |gem|
   gem.summary       = ' Provides a configuration for caching mechanisms and finders on ActiveRemote models'
   gem.homepage      = ''
 
-  gem.required_ruby_version = '>= 3.1'
+  gem.required_ruby_version = '>= 2.6'
   gem.files         = `git ls-files`.split($INPUT_RECORD_SEPARATOR)
   gem.executables   = gem.files.grep(%r{^bin/}).map { |f| File.basename(f) }
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
