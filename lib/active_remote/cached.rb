@@ -95,7 +95,7 @@ module ActiveRemote
       # Underscored Methods
       #
       def _method_missing_name(m)
-        regex = /(cached_(?:delete|exist_search|search|exist_find|find)_by_)([a-zA-Z_]*)(!|\?)?/
+        regex = /(cached_(?:delete|exist_search|search|exist_find|find)_by_)([0-9a-zA-Z_]*)(!|\?)?/
 
         return unless m.to_s =~ regex
 
@@ -105,7 +105,7 @@ module ActiveRemote
 
       # rubocop:disable Metrics/AbcSize
       def _args_in_sorted_order(m, args)
-        regex = /cached_(?:delete|exist_search|search|exist_find|find)_by_([a-zA-Z_]*)(!|\?)?/
+        regex = /cached_(?:delete|exist_search|search|exist_find|find)_by_([0-9a-zA-Z_]*)(!|\?)?/
 
         method_name = _method_missing_name(m)
 
