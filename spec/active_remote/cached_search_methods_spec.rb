@@ -22,6 +22,7 @@ class SearchMethodClass
   cached_finders_for :guid, :user_guid
   cached_finders_for %i[user_guid client_guid]
   cached_finders_for %i[derp user_guid client_guid]
+  cached_finders_for %i[zippy123 alpha]
 end
 
 describe SearchMethodClass do
@@ -68,6 +69,24 @@ describe SearchMethodClass do
 
     it "creates 'cached_search_by_client_guid_and_user_guid_and_derp!'" do
       expect(SearchMethodClass).to respond_to(:cached_search_by_client_guid_and_user_guid_and_derp!)
+    end
+
+    # Ensure it works with numbers in method name
+    it "creates 'cached_search_by_alpha_and_zippy123'" do
+      expect(SearchMethodClass).to respond_to(:cached_search_by_alpha_and_zippy123)
+    end
+
+    # Ensure it responds to methods where params are not sorted
+    # i.e. the method missing override is used.
+    it "responds to 'cached_search_by_zippy123_and_alpha'" do
+      expect(SearchMethodClass).to respond_to(:cached_search_by_zippy123_and_alpha)
+    end
+
+    # Ensure the right method actually gets called when
+    # method_missing override is used.
+    it "can call 'cached_search_by_zippy123_and_alpha' when not defined" do
+      expect(SearchMethodClass).to receive(:search)
+      SearchMethodClass.cached_search_by_zippy123_and_alpha("abc", "123")
     end
   end
 
@@ -228,6 +247,25 @@ describe SearchMethodClass do
       expect do
         SearchMethodClass.cached_search_by_foo!(:foo, :expires_in => 200)
       end.to raise_error ::ActiveRemote::RemoteRecordNotFound
+    end
+  end
+
+  # This tests the method_missing override
+  describe '#cached_search_by_zippy123_and_alpha' do
+    before do
+      ::ActiveRemote::Cached.cache(HashCache.new)
+      ::ActiveRemote::Cached.default_options(:expires_in => 100)
+    end
+
+    after do
+      ::ActiveRemote::Cached.default_options({})
+    end
+
+    it 'calls the underlying method with params in correct order' do
+      expect(SearchMethodClass).to receive(:cached_search_by_alpha_and_zippy123).with("123", "abc").and_return(:hello)
+
+      # Calls method that does not exist (different param order)
+      expect(SearchMethodClass.cached_search_by_zippy123_and_alpha("abc", "123")).to eq(:hello)
     end
   end
 end
