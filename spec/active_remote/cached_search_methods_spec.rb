@@ -86,7 +86,7 @@ describe SearchMethodClass do
     # method_missing override is used.
     it "can call 'cached_search_by_zippy123_and_alpha' when not defined" do
       expect(SearchMethodClass).to receive(:search)
-      SearchMethodClass.cached_search_by_zippy123_and_alpha("abc", "123")
+      SearchMethodClass.cached_search_by_zippy123_and_alpha('abc', '123')
     end
   end
 
@@ -262,10 +262,10 @@ describe SearchMethodClass do
     end
 
     it 'calls the underlying method with params in correct order' do
-      expect(SearchMethodClass).to receive(:cached_search_by_alpha_and_zippy123).with("123", "abc").and_return(:hello)
+      expect(SearchMethodClass).to receive(:cached_search_by_alpha_and_zippy123).with('123', 'abc').and_return(:hello)
 
       # Calls method that does not exist (different param order)
-      expect(SearchMethodClass.cached_search_by_zippy123_and_alpha("abc", "123")).to eq(:hello)
+      expect(SearchMethodClass.cached_search_by_zippy123_and_alpha('abc', '123')).to eq(:hello)
     end
   end
 end
