@@ -291,7 +291,7 @@ module ActiveRemote
         sorted_method_args = method_arguments.sort.join(',')
         cached_methods << method_name
 
-        expanded_search_args = ''
+        expanded_search_args = String.new
         method_arguments.each do |method_argument|
           expanded_search_args << ":#{method_argument} => #{method_argument},"
         end
@@ -336,7 +336,7 @@ module ActiveRemote
         sorted_method_args = method_arguments.sort.join(',')
         cached_methods << method_name
 
-        expanded_search_args = ''
+        expanded_search_args = String.new
         method_arguments.each do |method_argument|
           expanded_search_args << ":#{method_argument} => #{method_argument},"
         end
@@ -385,7 +385,7 @@ module ActiveRemote
         sorted_method_args = method_arguments.sort.join(',')
         cached_methods << method_name
 
-        expanded_search_args = ''
+        expanded_search_args = String.new
         method_arguments.each do |method_argument|
           expanded_search_args << ":#{method_argument} => #{method_argument},"
         end

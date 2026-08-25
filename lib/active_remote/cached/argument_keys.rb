@@ -23,7 +23,7 @@ module ActiveRemote
       def initialize(*arguments, options)
         @options = options
         @arguments = arguments.flatten.compact
-        @argument_string = ''
+        @argument_string = String.new
 
         @arguments.each do |argument|
           @argument_string << argument.to_s
