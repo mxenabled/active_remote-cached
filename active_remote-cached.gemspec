@@ -13,7 +13,7 @@ Gem::Specification.new do |gem|
   gem.email         = ['brandonsdewitt@gmail.com', 'devexperience@mx.com']
   gem.description   = ' Provides "cached" finders and a DSL to enumerate which finders should have cached versions '
   gem.summary       = ' Provides a configuration for caching mechanisms and finders on ActiveRemote models'
-  gem.homepage      = ''
+  gem.homepage      = 'https://github.com/mxenabled/active_remote-cached'
 
   gem.required_ruby_version = '>= 2.6'
   gem.files         = `git ls-files`.split($INPUT_RECORD_SEPARATOR)
@@ -30,4 +30,8 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency 'rake'
   gem.add_development_dependency 'rspec', '>= 3.0'
   gem.add_development_dependency 'rubocop'
+  gem.add_development_dependency 'base64'
+  gem.add_development_dependency 'bigdecimal'
+  gem.add_development_dependency 'mutex_m'
+  gem.add_development_dependency 'ostruct'
 end
