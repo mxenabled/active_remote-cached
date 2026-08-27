@@ -261,6 +261,28 @@ describe SearchMethodClass do
       end.to raise_error ::ActiveRemote::RemoteRecordNotFound
     end
 
+    it 'raises ActiveRemote::RemoteRecordNotFound when the results are nil' do
+      expect(SearchMethodClass).to receive(:search).and_return(nil)
+      expect do
+        SearchMethodClass.cached_search_by_foo!(:foo)
+      end.to raise_error ::ActiveRemote::RemoteRecordNotFound
+    end
+
+    it 'names the model class in the error' do
+      expect(SearchMethodClass).to receive(:search).and_return([])
+      expect do
+        SearchMethodClass.cached_search_by_foo!(:foo)
+      end.to raise_error(::ActiveRemote::RemoteRecordNotFound, /SearchMethodClass/)
+    end
+
+    it 'reports the model class on the error' do
+      expect(SearchMethodClass).to receive(:search).and_return([])
+
+      SearchMethodClass.cached_search_by_foo!(:foo)
+    rescue ::ActiveRemote::RemoteRecordNotFound => e
+      expect(e.remote_record_class).to eq(SearchMethodClass)
+    end
+
     it 'does not cache the results when it raises' do
       expect do
         SearchMethodClass.cached_search_by_foo!(:foo) { [] }

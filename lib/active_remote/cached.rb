@@ -412,7 +412,7 @@ module ActiveRemote
           #       results = self.search(:user_guid => user_guid)
           #     end
           #
-          #     raise ::ActiveRemote::RemoteRecordNotFound.new(self.class) if results.size <= 0
+          #     raise ::ActiveRemote::RemoteRecordNotFound, self if results.nil? || results.first.nil?
           #     results
           #   end
           # end
@@ -440,7 +440,7 @@ module ActiveRemote
                 results = self.search(#{expanded_search_args})
               end
 
-              raise ::ActiveRemote::RemoteRecordNotFound.new(self.class) if results.first.nil?
+              raise ::ActiveRemote::RemoteRecordNotFound, self if results.nil? || results.first.nil?
               results
             end
           end
