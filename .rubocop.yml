@@ -12,16 +12,6 @@ AllCops:
   Exclude:
     - 'gemfiles/**/*'
 
-Layout/AccessModifierIndentation:
-  Enabled: false
-Layout/CommentIndentation:
-  Enabled: false
-Layout/IndentationConsistency:
-  Enabled: false
-
-Style/AccessModifierDeclarations:
-  Enabled: false
-
 Naming/MethodParameterName:
   Enabled: false
 
@@ -47,11 +37,11 @@ Metrics/ModuleLength:
 Style/Documentation:
   Enabled: false
 
+# The generated finder methods in this file are long heredocs.
 Metrics/MethodLength:
-  Enabled: false
-
-Naming/VariableNumber:
-  Enabled: false
+  Exclude:
+    - 'lib/active_remote/cached.rb'
+    - 'spec/**/*'
 
 Style/HashSyntax:
   Description: >-
@@ -65,6 +55,3 @@ Style/HashSyntax:
 # Use lambdas instead of stabbys
 Style/Lambda:
   EnforcedStyle: lambda
-
-Style/MissingRespondToMissing:
-  Enabled: false

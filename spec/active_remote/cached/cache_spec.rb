@@ -3,33 +3,34 @@
 require 'spec_helper'
 
 describe ::ActiveRemote::Cached::Cache do
+  let(:invalid_provider_error) { ::ActiveRemote::Cached::Cache::InvalidCacheProvider }
   let(:cache_provider) { ::ActiveSupport::Cache::MemoryStore.new }
   let(:cache) { ::ActiveRemote::Cached::Cache.new(cache_provider) }
 
   describe 'API' do
     it 'validates #delete present' do
       cache = OpenStruct.new(:write => nil, :fetch => nil, :read => nil, :exist? => nil)
-      expect { ::ActiveRemote::Cached.cache(cache) }.to raise_error(RuntimeError, /respond_to.*delete/i)
+      expect { ::ActiveRemote::Cached.cache(cache) }.to raise_error(invalid_provider_error, /respond_to.*delete/i)
     end
 
     it 'validates #exist? present' do
       cache = OpenStruct.new(:write => nil, :delete => nil, :read => nil, :fetch => nil)
-      expect { ::ActiveRemote::Cached.cache(cache) }.to raise_error(RuntimeError, /respond_to.*exist/i)
+      expect { ::ActiveRemote::Cached.cache(cache) }.to raise_error(invalid_provider_error, /respond_to.*exist/i)
     end
 
     it 'validates #fetch present' do
       cache = OpenStruct.new(:write => nil, :delete => nil, :read => nil, :exist? => nil)
-      expect { ::ActiveRemote::Cached.cache(cache) }.to raise_error(RuntimeError, /respond_to.*fetch/i)
+      expect { ::ActiveRemote::Cached.cache(cache) }.to raise_error(invalid_provider_error, /respond_to.*fetch/i)
     end
 
     it 'validates #read present' do
       cache = OpenStruct.new(:write => nil, :delete => nil, :fetch => nil, :exist? => nil)
-      expect { ::ActiveRemote::Cached.cache(cache) }.to raise_error(RuntimeError, /respond_to.*read/i)
+      expect { ::ActiveRemote::Cached.cache(cache) }.to raise_error(invalid_provider_error, /respond_to.*read/i)
     end
 
     it 'validates #write present' do
       cache = OpenStruct.new(:read => nil, :delete => nil, :fetch => nil, :exist? => nil)
-      expect { ::ActiveRemote::Cached.cache(cache) }.to raise_error(RuntimeError, /respond_to.*write/i)
+      expect { ::ActiveRemote::Cached.cache(cache) }.to raise_error(invalid_provider_error, /respond_to.*write/i)
     end
   end
 

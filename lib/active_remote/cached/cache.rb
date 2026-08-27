@@ -5,6 +5,10 @@ require 'delegate'
 module ActiveRemote
   module Cached
     class Cache < ::SimpleDelegator
+      # Raised when the given cache provider is missing a method the library
+      # calls on it.
+      class InvalidCacheProvider < ::StandardError; end
+
       attr_reader :cache_provider
 
       def initialize(new_cache_provider)
@@ -83,10 +87,9 @@ module ActiveRemote
       def validate_provider_method_present(method_name)
         return if cache_provider.respond_to?(method_name)
 
-          raise <<-CACHE_METHOD
-          ActiveRemote::Cached::Cache must respond_to? #{method_name}
-          in order to be used as a caching interface for ActiveRemote
-          CACHE_METHOD
+        raise InvalidCacheProvider,
+              "ActiveRemote::Cached::Cache must respond_to? #{method_name} " \
+              'in order to be used as a caching interface for ActiveRemote'
       end
     end
   end
