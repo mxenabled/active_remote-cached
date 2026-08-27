@@ -1,5 +1,14 @@
 AllCops:
   TargetRubyVersion: 3.1
+  # Do not adopt new cops automatically. Without this, every run prints the
+  # full pending cop list as a warning.
+  NewCops: disable
+  # Keep the default Exclude list. Without this, the Exclude below replaces the
+  # defaults, and RuboCop walks into vendor/bundle and reads the .rubocop.yml of
+  # every installed gem. Some of those name cops that no longer exist.
+  inherit_mode:
+    merge:
+      - Exclude
   Exclude:
     - 'gemfiles/**/*'
 
