@@ -18,6 +18,7 @@ Naming/MethodParameterName:
 Metrics/BlockLength:
   Exclude:
     - 'spec/**/*'
+    - '*.gemspec'
 
 # ActiveSupport cache #fetch only calls the block on a miss, so the block form
 # is not the same as the Hash#fetch default value form.
