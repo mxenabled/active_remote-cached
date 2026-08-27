@@ -246,12 +246,13 @@ module ActiveRemote
           def self.#{method_name}(#{expanded_method_args}, __active_remote_cached_options = {})
             __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(_cached_finder_options_for('#{method_name}')).merge(__active_remote_cached_options)
             namespace = __active_remote_cached_options.delete(:namespace)
+            argument_cache_key = #{expanded_cache_key_args}
             find_cache_key = [
               RUBY_AND_ACTIVE_SUPPORT_VERSION,
               namespace,
               name,
               "#find",
-              #{expanded_cache_key_args}
+              argument_cache_key
             ].compact
 
             search_cache_key = [
@@ -259,7 +260,7 @@ module ActiveRemote
               namespace,
               name,
               "#search",
-              #{expanded_cache_key_args}
+              argument_cache_key
             ].compact
 
             ::ActiveRemote::Cached.cache.delete(find_cache_key)

@@ -71,6 +71,53 @@ describe ::ActiveRemote::Cached::Cache do
     end
   end
 
+  describe '#fetch round trips' do
+    let(:counting_provider) do
+      Class.new(::ActiveSupport::Cache::MemoryStore) do
+        def initialize(*args)
+          @calls = []
+          super
+        end
+
+        attr_reader :calls
+
+        def fetch(*args, **options, &block)
+          @calls << :fetch
+          super
+        end
+
+        def write(*args, **options)
+          @calls << :write
+          super
+        end
+
+        def delete(*args, **options)
+          @calls << :delete
+          super
+        end
+      end.new
+    end
+
+    # The provider used to write the nil and then take a second round trip to
+    # delete it. :skip_nil makes the provider skip the write.
+    it 'takes one provider call for a nil value' do
+      cache = ::ActiveRemote::Cached::Cache.new(counting_provider)
+
+      cache.fetch('key') { nil }
+
+      expect(counting_provider.calls).to eq([:fetch])
+    end
+
+    it 'still writes a nil when :allow_nil is given' do
+      cache = ::ActiveRemote::Cached::Cache.new(counting_provider)
+
+      cache.fetch('key', :allow_nil => true) { nil }
+
+      expect(counting_provider.calls).to eq(%i[fetch write])
+      expect(counting_provider.exist?('key')).to eq(true)
+    end
+  end
+
   describe '#enable_nested_caching!' do
     it 'writes to the cache provider only until nested caching is enabled' do
       cache.write('key', 'value')

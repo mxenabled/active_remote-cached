@@ -34,9 +34,10 @@ module ActiveRemote
       end
 
       def fetch(name, options = {})
-        fetch_value = nested_cache_provider.fetch(name, options) { super }
+        provider_options = provider_fetch_options(options)
+        fetch_value = nested_cache_provider.fetch(name, provider_options) { super(name, provider_options) }
 
-        delete(name) unless valid_fetched_value?(fetch_value, options)
+        delete(name) if delete_after_fetch?(fetch_value, options, provider_options)
 
         fetch_value
       end
@@ -53,6 +54,24 @@ module ActiveRemote
       private
 
       attr_reader :nested_cache_provider
+
+      # :skip_nil tells the provider not to write a nil at all, which saves a
+      # write and the delete that follows it. Only an ActiveSupport store is
+      # known to honor the option.
+      def provider_fetch_options(options)
+        return options if options.fetch(:allow_nil, false)
+        return options unless cache_provider.is_a?(::ActiveSupport::Cache::Store)
+
+        options.merge(:skip_nil => true)
+      end
+
+      def delete_after_fetch?(value, options, provider_options)
+        return false if valid_fetched_value?(value, options)
+        # The provider already skipped the write.
+        return false if value.nil? && provider_options[:skip_nil]
+
+        true
+      end
 
       def valid_fetched_value?(value, options = {})
         return false if value.nil? && !options.fetch(:allow_nil, false)
