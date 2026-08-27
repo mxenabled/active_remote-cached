@@ -25,6 +25,32 @@ describe ::ActiveRemote::Cached::ArgumentKeys do
     expect(::ActiveRemote::Cached::ArgumentKeys.new('hello {}', options).cache_key).to eq('helloSPLBRB')
   end
 
+  it 'replaces a tab when :active_remote_cached_replace_characters' do
+    options = { :active_remote_cached_replace_characters => true }
+    expect(::ActiveRemote::Cached::ArgumentKeys.new("a\tb", options).cache_key).to eq('aTBb')
+  end
+
+  it 'replaces a newline when :active_remote_cached_replace_characters' do
+    options = { :active_remote_cached_replace_characters => true }
+    expect(::ActiveRemote::Cached::ArgumentKeys.new("a\nb", options).cache_key).to eq('aNLb')
+  end
+
+  # REMOVE_CHARACTERS uses [[:space:]], so both options must cover the same
+  # whitespace. A raw tab or newline in a key breaks the Memcached protocol.
+  it 'leaves no whitespace in the key under either option' do
+    argument = "a b\tc\nd\re\ff\vg"
+
+    removed = ::ActiveRemote::Cached::ArgumentKeys.new(
+      argument, :active_remote_cached_remove_characters => true
+    ).cache_key
+    replaced = ::ActiveRemote::Cached::ArgumentKeys.new(
+      argument, :active_remote_cached_replace_characters => true
+    ).cache_key
+
+    expect(removed).not_to match(/[[:space:]]/)
+    expect(replaced).not_to match(/[[:space:]]/)
+  end
+
   it 'joins multiple arguments into one key' do
     expect(::ActiveRemote::Cached::ArgumentKeys.new('hello', 'world', {}).cache_key).to eq('helloworld')
   end

@@ -6,21 +6,29 @@ module ActiveRemote
       attr_reader :arguments, :argument_string, :options
 
       REMOVE_CHARACTERS = /[[:space:]+=><{}\[\];:\-,]/
-      REPLACE_MAP = [
-        [' ', 'SP'],
-        ['+', 'PL'],
-        ['=', 'EQ'],
-        ['>', 'GT'],
-        ['<', 'LT'],
-        ['{', 'LB'],
-        ['}', 'RB'],
-        ['[', 'LB2'],
-        [']', 'RB2'],
-        [';', 'SC'],
-        [':', 'CO'],
-        ['-', 'DA'],
-        [',', 'COM']
-      ].freeze
+      # Covers the same characters as REMOVE_CHARACTERS. A tab or a newline
+      # left in a key breaks the Memcached protocol.
+      REPLACE_MAP = {
+        ' ' => 'SP',
+        "\t" => 'TB',
+        "\n" => 'NL',
+        "\r" => 'CR',
+        "\f" => 'FF',
+        "\v" => 'VT',
+        '+' => 'PL',
+        '=' => 'EQ',
+        '>' => 'GT',
+        '<' => 'LT',
+        '{' => 'LB',
+        '}' => 'RB',
+        '[' => 'LB2',
+        ']' => 'RB2',
+        ';' => 'SC',
+        ':' => 'CO',
+        '-' => 'DA',
+        ',' => 'COM'
+      }.freeze
+      REPLACE_CHARACTERS = ::Regexp.union(REPLACE_MAP.keys)
 
       # The separators below are absent from both REMOVE_CHARACTERS and
       # REPLACE_MAP, so they survive either option. escape_value/1 escapes them
@@ -64,9 +72,8 @@ module ActiveRemote
         return @argument_string.gsub(REMOVE_CHARACTERS, '') if remove_characters?
         return @argument_string unless replace_characters?
 
-        REPLACE_MAP.inject(@argument_string) do |key, (character, replacement)|
-          key.gsub(character, replacement)
-        end
+        # One pass, rather than one gsub for each entry in the map.
+        @argument_string.gsub(REPLACE_CHARACTERS, REPLACE_MAP)
       end
 
       def to_s
