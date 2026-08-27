@@ -198,10 +198,22 @@ module ActiveRemote
         method_arguments.map { |method_argument| ":#{method_argument} => #{method_argument}," }.join
       end
 
+      # Returns the source text that builds the cache key for a generated
+      # method. The key names each field, so that two finders that take the
+      # same values do not share one cache entry.
+      def _expanded_cache_key_args(method_arguments)
+        sorted_arguments = method_arguments.sort
+        field_names = sorted_arguments.map { |argument| ":#{argument}" }.join(',')
+
+        '::ActiveRemote::Cached::ArgumentKeys.for_fields(' \
+          "[#{field_names}], [#{sorted_arguments.join(',')}], __active_remote_cached_options" \
+          ').cache_key'
+      end
+
       def _define_cached_delete_method(method_name, *method_arguments, cached_finder_options)
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(',')
-        sorted_method_args = method_arguments.sort.join(',')
+        expanded_cache_key_args = _expanded_cache_key_args(method_arguments)
         cached_methods << method_name
 
         class_eval <<-RUBY, __FILE__, __LINE__ + 1
@@ -216,7 +228,7 @@ module ActiveRemote
               namespace,
               name,
               "#find",
-              ::ActiveRemote::Cached::ArgumentKeys.new(#{sorted_method_args}, __active_remote_cached_options).cache_key
+              #{expanded_cache_key_args}
             ].compact
 
             search_cache_key = [
@@ -224,7 +236,7 @@ module ActiveRemote
               namespace,
               name,
               "#search",
-              ::ActiveRemote::Cached::ArgumentKeys.new(#{sorted_method_args}, __active_remote_cached_options).cache_key
+              #{expanded_cache_key_args}
             ].compact
 
             ::ActiveRemote::Cached.cache.delete(find_cache_key)
@@ -236,7 +248,7 @@ module ActiveRemote
       def _define_cached_exist_find_method(method_name, *method_arguments, cached_finder_options)
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(',')
-        sorted_method_args = method_arguments.sort.join(',')
+        expanded_cache_key_args = _expanded_cache_key_args(method_arguments)
         cached_methods << method_name
         cached_methods << "#{method_name}?"
 
@@ -252,7 +264,7 @@ module ActiveRemote
               namespace,
               name,
               "#find",
-              ::ActiveRemote::Cached::ArgumentKeys.new(#{sorted_method_args}, __active_remote_cached_options).cache_key
+              #{expanded_cache_key_args}
             ].compact
 
             ::ActiveRemote::Cached.cache.exist?(cache_key)
@@ -265,7 +277,7 @@ module ActiveRemote
       def _define_cached_exist_search_method(method_name, *method_arguments, cached_finder_options)
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(',')
-        sorted_method_args = method_arguments.sort.join(',')
+        expanded_cache_key_args = _expanded_cache_key_args(method_arguments)
         cached_methods << method_name
         cached_methods << "#{method_name}?"
 
@@ -281,7 +293,7 @@ module ActiveRemote
               namespace,
               name,
               "#search",
-              ::ActiveRemote::Cached::ArgumentKeys.new(#{sorted_method_args}, __active_remote_cached_options).cache_key
+              #{expanded_cache_key_args}
             ].compact
 
             ::ActiveRemote::Cached.cache.exist?(cache_key)
@@ -294,7 +306,7 @@ module ActiveRemote
       def _define_cached_find_method(method_name, *method_arguments, cached_finder_options)
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(',')
-        sorted_method_args = method_arguments.sort.join(',')
+        expanded_cache_key_args = _expanded_cache_key_args(method_arguments)
         cached_methods << method_name
 
         expanded_search_args = _expanded_search_args(method_arguments)
@@ -319,7 +331,7 @@ module ActiveRemote
               namespace,
               name,
               "#find",
-              ::ActiveRemote::Cached::ArgumentKeys.new(#{sorted_method_args}, __active_remote_cached_options).cache_key
+              #{expanded_cache_key_args}
             ].compact
 
             ::ActiveRemote::Cached.cache.fetch(cache_key, __active_remote_cached_options) do
@@ -336,7 +348,7 @@ module ActiveRemote
       def _define_cached_search_method(method_name, *method_arguments, cached_finder_options)
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(',')
-        sorted_method_args = method_arguments.sort.join(',')
+        expanded_cache_key_args = _expanded_cache_key_args(method_arguments)
         cached_methods << method_name
 
         expanded_search_args = _expanded_search_args(method_arguments)
@@ -365,7 +377,7 @@ module ActiveRemote
               namespace,
               name,
               "#search",
-              ::ActiveRemote::Cached::ArgumentKeys.new(#{sorted_method_args}, __active_remote_cached_options).cache_key
+              #{expanded_cache_key_args}
             ].compact
 
             ::ActiveRemote::Cached.cache.fetch(cache_key, __active_remote_cached_options) do
@@ -382,7 +394,7 @@ module ActiveRemote
       def _define_cached_search_bang_method(method_name, *method_arguments, cached_finder_options)
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(',')
-        sorted_method_args = method_arguments.sort.join(',')
+        expanded_cache_key_args = _expanded_cache_key_args(method_arguments)
         cached_methods << method_name
 
         expanded_search_args = _expanded_search_args(method_arguments)
@@ -416,7 +428,7 @@ module ActiveRemote
               namespace,
               name,
               "#search",
-              ::ActiveRemote::Cached::ArgumentKeys.new(#{sorted_method_args}, __active_remote_cached_options).cache_key
+              #{expanded_cache_key_args}
             ].compact
 
             ::ActiveRemote::Cached.cache.fetch(cache_key, __active_remote_cached_options) do

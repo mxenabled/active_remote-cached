@@ -171,7 +171,8 @@ describe ExistMethodClass do
     describe 'namespaced cache' do
       it 'uses the namespace as a prefix to the cache key' do
         expect(::ActiveRemote::Cached.cache).to receive(:exist?).with(
-          [::ActiveRemote::Cached::RUBY_AND_ACTIVE_SUPPORT_VERSION, 'MyApp', ExistMethodClass.name, '#find', 'guid']
+          [::ActiveRemote::Cached::RUBY_AND_ACTIVE_SUPPORT_VERSION, 'MyApp', ExistMethodClass.name, '#find',
+           'guid.guid']
         ).and_return(true)
 
         expect(ExistMethodClass.cached_exist_find_by_guid?(:guid, :namespace => 'MyApp')).to eq(true)

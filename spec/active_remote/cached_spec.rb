@@ -87,7 +87,7 @@ describe ::ActiveRemote::Cached do
   describe 'RUBY_AND_ACTIVE_SUPPORT_VERSION' do
     it 'prefixes every cache key' do
       expect(::ActiveRemote::Cached.cache).to receive(:fetch).with(
-        [versioned_prefix, ConfigurationClass.name, '#find', 'guid'], {}
+        [versioned_prefix, ConfigurationClass.name, '#find', 'guid.guid'], {}
       ).and_return(:find_result)
 
       ConfigurationClass.cached_find_by_guid(:guid)
@@ -115,7 +115,7 @@ describe ::ActiveRemote::Cached do
 
     it 'passes the options through to the fetch call' do
       expect(::ActiveRemote::Cached.cache).to receive(:fetch).with(
-        [versioned_prefix, ConfigurationClass.name, '#find', 'guid'], { :expires_in => 200 }
+        [versioned_prefix, ConfigurationClass.name, '#find', 'guid.guid'], { :expires_in => 200 }
       ).and_return(:hello)
 
       expect(ConfigurationClass.cached_find({ :guid => :guid }, :expires_in => 200)).to eq(:hello)

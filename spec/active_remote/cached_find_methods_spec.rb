@@ -79,7 +79,7 @@ describe FindMethodClass do
 
     it 'merges the default options in for the fetch call' do
       expect(::ActiveRemote::Cached.cache).to receive(:fetch).with(
-        [versioned_prefix, FindMethodClass.name, '#find', 'guid'], { :expires_in => 100 }
+        [versioned_prefix, FindMethodClass.name, '#find', 'guid.guid'], { :expires_in => 100 }
       ).and_return(:hello)
       expect(FindMethodClass).not_to receive(:find)
       expect(FindMethodClass.cached_find_by_guid(:guid)).to eq(:hello)
@@ -87,7 +87,7 @@ describe FindMethodClass do
 
     it 'overrides the default options with local options for the fetch call' do
       expect(::ActiveRemote::Cached.cache).to receive(:fetch).with(
-        [versioned_prefix, FindMethodClass.name, '#find', 'guid'], { :expires_in => 200 }
+        [versioned_prefix, FindMethodClass.name, '#find', 'guid.guid'], { :expires_in => 200 }
       ).and_return(:hello)
       expect(FindMethodClass).not_to receive(:find)
 
@@ -101,7 +101,7 @@ describe FindMethodClass do
 
       it 'uses the namespace as a prefix to the cache key' do
         expect(::ActiveRemote::Cached.cache).to receive(:fetch).with(
-          [versioned_prefix, 'MyApp', FindMethodClass.name, '#find', 'guid'], { :expires_in => 100 }
+          [versioned_prefix, 'MyApp', FindMethodClass.name, '#find', 'guid.guid'], { :expires_in => 100 }
         ).and_return(:hello)
 
         expect(FindMethodClass).not_to receive(:find)
@@ -122,7 +122,7 @@ describe FindMethodClass do
 
     it 'overrides the default options with cached_finder options for the fetch call' do
       expect(::ActiveRemote::Cached.cache).to receive(:fetch).with(
-        [versioned_prefix, FindMethodClass.name, '#find', 'foo'], { :expires_in => 500 }
+        [versioned_prefix, FindMethodClass.name, '#find', 'foo.foo'], { :expires_in => 500 }
       ).and_return(:hello)
 
       expect(FindMethodClass).not_to receive(:find)
@@ -131,7 +131,7 @@ describe FindMethodClass do
 
     it 'overrides the cached_finder options with local options for the fetch call' do
       expect(::ActiveRemote::Cached.cache).to receive(:fetch).with(
-        [versioned_prefix, FindMethodClass.name, '#find', 'foo'], { :expires_in => 200 }
+        [versioned_prefix, FindMethodClass.name, '#find', 'foo.foo'], { :expires_in => 200 }
       ).and_return(:hello)
 
       expect(FindMethodClass).not_to receive(:find)
