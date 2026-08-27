@@ -15,7 +15,7 @@ Gem::Specification.new do |gem|
   gem.summary       = ' Provides a configuration for caching mechanisms and finders on ActiveRemote models'
   gem.homepage      = ''
 
-  gem.required_ruby_version = '>= 2.6'
+  gem.required_ruby_version = '>= 3.1'
   gem.files         = `git ls-files`.split($INPUT_RECORD_SEPARATOR)
   gem.executables   = gem.files.grep(%r{^bin/}).map { |f| File.basename(f) }
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
@@ -24,10 +24,13 @@ Gem::Specification.new do |gem|
   gem.add_dependency 'active_remote', '>= 6.1'
   gem.add_dependency 'activesupport'
 
+  gem.add_development_dependency 'appraisal'
   gem.add_development_dependency 'bundler'
   gem.add_development_dependency 'mocha'
+  # ostruct leaves the default gems in ruby 4.0
+  gem.add_development_dependency 'ostruct'
   gem.add_development_dependency 'pry'
   gem.add_development_dependency 'rake'
   gem.add_development_dependency 'rspec', '>= 3.0'
-  gem.add_development_dependency 'rubocop'
+  gem.add_development_dependency 'rubocop', '~> 1.80'
 end

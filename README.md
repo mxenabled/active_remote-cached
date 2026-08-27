@@ -1,5 +1,7 @@
 # ActiveRemote::Cached
 
+[![CI](https://github.com/skunkworker/active_remote-cached/actions/workflows/ci.yml/badge.svg)](https://github.com/skunkworker/active_remote-cached/actions/workflows/ci.yml)
+
 Provides cached finders for ActiveRemote models that allow a caching provider to cache the result of a query.
 
 ## Installation
@@ -87,6 +89,59 @@ Each finder as takes an optional options hash that will override the options pas
 ```ruby
 customer = ::Customer.cached_find_by_id(1, :expires_in => 15.minutes)
 ```
+
+## Development
+
+Install the dependencies:
+
+```shell
+bundle install
+```
+
+Run the specs against the default gemfile:
+
+```shell
+bundle exec rspec
+```
+
+Run RuboCop:
+
+```shell
+bundle exec rubocop
+```
+
+### Test matrix
+
+This gem uses [appraisal](https://github.com/thoughtbot/appraisal) to test against
+several `active_remote` versions. The `Appraisals` file defines each version.
+
+Install every appraisal:
+
+```shell
+bundle exec appraisal install
+```
+
+Run the specs against every appraisal:
+
+```shell
+bundle exec appraisal rspec
+```
+
+Run the specs against one appraisal:
+
+```shell
+bundle exec appraisal active_remote-8.0 rspec
+```
+
+Regenerate the gemfiles after you edit `Appraisals`:
+
+```shell
+bundle exec appraisal generate
+```
+
+CI runs this matrix on Ruby 3.1, Ruby 3.4, JRuby 9.4, and JRuby 10.0.
+`active_remote` 8.0 requires Ruby 3.2 or later. CI does not run that
+version on Ruby 3.1 or JRuby 9.4.
 
 ## Contributing
 
