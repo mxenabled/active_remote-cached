@@ -33,6 +33,10 @@ module ActiveRemote
         @nested_cache_provider = ::ActiveSupport::Cache::MemoryStore.new
       end
 
+      def nested_caching?
+        !nested_cache_provider.is_a?(::ActiveSupport::Cache::NullStore)
+      end
+
       def exist?(*args)
         nested_cache_provider.exist?(*args) || super
       end

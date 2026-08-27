@@ -21,7 +21,12 @@ module ActiveRemote
     RUBY_AND_ACTIVE_SUPPORT_VERSION = "#{RUBY_ENGINE_VERSION}:#{ActiveSupport::VERSION::STRING}".freeze
 
     def self.cache(cache_provider = nil)
-      @cache_provider = ::ActiveRemote::Cached::Cache.new(cache_provider) if cache_provider
+      if cache_provider
+        nested_caching = @cache_provider&.nested_caching?
+        @cache_provider = ::ActiveRemote::Cached::Cache.new(cache_provider)
+        # A new Cache starts with nested caching off, so carry the setting over.
+        @cache_provider.enable_nested_caching! if nested_caching
+      end
 
       @cache_provider
     end

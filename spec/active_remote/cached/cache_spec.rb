@@ -34,6 +34,12 @@ describe ::ActiveRemote::Cached::Cache do
     end
   end
 
+  describe '#nested_caching?' do
+    it 'is false before nested caching is enabled' do
+      expect(cache.nested_caching?).to eq(false)
+    end
+  end
+
   describe 'delegation' do
     it 'exposes the cache provider it was given' do
       expect(cache.cache_provider).to be(cache_provider)
@@ -157,6 +163,26 @@ describe ::ActiveRemote::Cached::Cache do
         cache_provider.write('key', 'provider')
 
         expect(cache.exist?('key')).to eq(true)
+      end
+
+      it 'reports that nested caching is on' do
+        expect(cache.nested_caching?).to eq(true)
+      end
+
+      # A new Cache starts with nested caching off, so swapping the provider
+      # used to turn the setting off without saying so.
+      it 'keeps nested caching on when the cache provider is replaced' do
+        original_cache = ::ActiveRemote::Cached.cache
+
+        ::ActiveRemote::Cached.cache(cache_provider)
+        ::ActiveRemote::Cached.cache.enable_nested_caching!
+        ::ActiveRemote::Cached.cache(::ActiveSupport::Cache::MemoryStore.new)
+
+        expect(::ActiveRemote::Cached.cache.nested_caching?).to eq(true)
+      ensure
+        # .cache now carries the nested setting forward, so reset the module
+        # rather than call it again.
+        ::ActiveRemote::Cached.instance_variable_set(:@cache_provider, original_cache)
       end
 
       # #read joins the two providers with ||, so a false value in the nested
