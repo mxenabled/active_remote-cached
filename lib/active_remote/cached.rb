@@ -38,6 +38,29 @@ module ActiveRemote
         @cached_methods
       end
 
+      # The options each cached finder was declared with, keyed by method name.
+      # The generated methods read this at call time. Interpolating the options
+      # into the generated source instead would require every value to have a
+      # literal form, and a value such as 5.minutes does not.
+      def cached_finder_options
+        @cached_finder_options ||= {}
+      end
+
+      # A subclass inherits the finder methods its parent defined, but not the
+      # parent registry, so the lookup walks up the superclass chain.
+      def _cached_finder_options_for(method_name)
+        klass = self
+
+        while klass.respond_to?(:cached_finder_options)
+          options = klass.cached_finder_options[method_name]
+          return options if options
+
+          klass = klass.superclass
+        end
+
+        {}
+      end
+
       def cached_finders_for(*cached_finder_keys)
         options = cached_finder_keys.extract_options!
 
@@ -210,18 +233,17 @@ module ActiveRemote
           ').cache_key'
       end
 
-      def _define_cached_delete_method(method_name, *method_arguments, cached_finder_options)
+      def _define_cached_delete_method(method_name, *method_arguments, cached_finder_options_hash)
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(',')
         expanded_cache_key_args = _expanded_cache_key_args(method_arguments)
-        cached_methods << method_name
 
         class_eval <<-RUBY, __FILE__, __LINE__ + 1
           # def self.cached_delete_by_user_guid(user_guid, options = {})
           #   ::ActiveRemote::Cached.cache.delete([name, user_guid])
           # end
           def self.#{method_name}(#{expanded_method_args}, __active_remote_cached_options = {})
-            __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
+            __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(_cached_finder_options_for('#{method_name}')).merge(__active_remote_cached_options)
             namespace = __active_remote_cached_options.delete(:namespace)
             find_cache_key = [
               RUBY_AND_ACTIVE_SUPPORT_VERSION,
@@ -243,21 +265,22 @@ module ActiveRemote
             ::ActiveRemote::Cached.cache.delete(search_cache_key)
           end
         RUBY
+
+        cached_finder_options[method_name] = cached_finder_options_hash
+        cached_methods << method_name
       end
 
-      def _define_cached_exist_find_method(method_name, *method_arguments, cached_finder_options)
+      def _define_cached_exist_find_method(method_name, *method_arguments, cached_finder_options_hash)
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(',')
         expanded_cache_key_args = _expanded_cache_key_args(method_arguments)
-        cached_methods << method_name
-        cached_methods << "#{method_name}?"
 
         class_eval <<-RUBY, __FILE__, __LINE__ + 1
           # def self.cached_exist_find_by_user_guid(user_guid, options = {})
           #   ::ActiveRemote::Cached.cache.exist?([name, user_guid])
           # end
           def self.#{method_name}(#{expanded_method_args}, __active_remote_cached_options = {})
-            __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
+            __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(_cached_finder_options_for('#{method_name}')).merge(__active_remote_cached_options)
             namespace = __active_remote_cached_options.delete(:namespace)
             cache_key = [
               RUBY_AND_ACTIVE_SUPPORT_VERSION,
@@ -272,21 +295,23 @@ module ActiveRemote
         RUBY
 
         singleton_class.send(:alias_method, "#{method_name}?", method_name)
+
+        cached_finder_options[method_name] = cached_finder_options_hash
+        cached_methods << method_name
+        cached_methods << "#{method_name}?"
       end
 
-      def _define_cached_exist_search_method(method_name, *method_arguments, cached_finder_options)
+      def _define_cached_exist_search_method(method_name, *method_arguments, cached_finder_options_hash)
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(',')
         expanded_cache_key_args = _expanded_cache_key_args(method_arguments)
-        cached_methods << method_name
-        cached_methods << "#{method_name}?"
 
         class_eval <<-RUBY, __FILE__, __LINE__ + 1
           # def self.cached_exist_search_by_user_guid(user_guid, options = {})
           #   ::ActiveRemote::Cached.cache.exist?([namespace, name, "#search", user_guid])
           # end
           def self.#{method_name}(#{expanded_method_args}, __active_remote_cached_options = {})
-            __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
+            __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(_cached_finder_options_for('#{method_name}')).merge(__active_remote_cached_options)
             namespace = __active_remote_cached_options.delete(:namespace)
             cache_key = [
               RUBY_AND_ACTIVE_SUPPORT_VERSION,
@@ -301,13 +326,16 @@ module ActiveRemote
         RUBY
 
         singleton_class.send(:alias_method, "#{method_name}?", method_name)
+
+        cached_finder_options[method_name] = cached_finder_options_hash
+        cached_methods << method_name
+        cached_methods << "#{method_name}?"
       end
 
-      def _define_cached_find_method(method_name, *method_arguments, cached_finder_options)
+      def _define_cached_find_method(method_name, *method_arguments, cached_finder_options_hash)
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(',')
         expanded_cache_key_args = _expanded_cache_key_args(method_arguments)
-        cached_methods << method_name
 
         expanded_search_args = _expanded_search_args(method_arguments)
 
@@ -324,7 +352,7 @@ module ActiveRemote
           # of the result object is maintained for requests/responses
           #
           def self.#{method_name}(#{expanded_method_args}, __active_remote_cached_options = {})
-            __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
+            __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(_cached_finder_options_for('#{method_name}')).merge(__active_remote_cached_options)
             namespace = __active_remote_cached_options.delete(:namespace)
             cache_key = [
               RUBY_AND_ACTIVE_SUPPORT_VERSION,
@@ -343,13 +371,15 @@ module ActiveRemote
             end
           end
         RUBY
+
+        cached_finder_options[method_name] = cached_finder_options_hash
+        cached_methods << method_name
       end
 
-      def _define_cached_search_method(method_name, *method_arguments, cached_finder_options)
+      def _define_cached_search_method(method_name, *method_arguments, cached_finder_options_hash)
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(',')
         expanded_cache_key_args = _expanded_cache_key_args(method_arguments)
-        cached_methods << method_name
 
         expanded_search_args = _expanded_search_args(method_arguments)
 
@@ -370,7 +400,7 @@ module ActiveRemote
           # of the result object is maintained for requests/responses
           #
           def self.#{method_name}(#{expanded_method_args}, __active_remote_cached_options = {})
-            __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
+            __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(_cached_finder_options_for('#{method_name}')).merge(__active_remote_cached_options)
             namespace = __active_remote_cached_options.delete(:namespace)
             cache_key = [
               RUBY_AND_ACTIVE_SUPPORT_VERSION,
@@ -389,13 +419,15 @@ module ActiveRemote
             end
           end
         RUBY
+
+        cached_finder_options[method_name] = cached_finder_options_hash
+        cached_methods << method_name
       end
 
-      def _define_cached_search_bang_method(method_name, *method_arguments, cached_finder_options)
+      def _define_cached_search_bang_method(method_name, *method_arguments, cached_finder_options_hash)
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(',')
         expanded_cache_key_args = _expanded_cache_key_args(method_arguments)
-        cached_methods << method_name
 
         expanded_search_args = _expanded_search_args(method_arguments)
 
@@ -421,7 +453,7 @@ module ActiveRemote
           # of the result object is maintained for requests/responses
           #
           def self.#{method_name}(#{expanded_method_args}, __active_remote_cached_options = {})
-            __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(#{cached_finder_options}).merge(__active_remote_cached_options)
+            __active_remote_cached_options = ::ActiveRemote::Cached.default_options.merge(_cached_finder_options_for('#{method_name}')).merge(__active_remote_cached_options)
             namespace = __active_remote_cached_options.delete(:namespace)
             cache_key = [
               RUBY_AND_ACTIVE_SUPPORT_VERSION,
@@ -445,6 +477,9 @@ module ActiveRemote
             end
           end
         RUBY
+
+        cached_finder_options[method_name] = cached_finder_options_hash
+        cached_methods << method_name
       end
     end
 
