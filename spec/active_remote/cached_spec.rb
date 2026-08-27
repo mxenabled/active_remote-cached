@@ -198,6 +198,28 @@ describe ::ActiveRemote::Cached do
     end
   end
 
+  describe '._args_in_sorted_order' do
+    it 'reorders the arguments to match the defined method' do
+      expect(ConfigurationClass).to receive(:cached_find_by_alpha_and_beta).with('A', 'B')
+
+      ConfigurationClass.cached_find_by_beta_and_alpha('B', 'A')
+    end
+
+    it 'passes the options hash through as the last argument' do
+      expect(ConfigurationClass).to receive(:cached_find_by_alpha_and_beta).with('A', 'B', { :expires_in => 10 })
+
+      ConfigurationClass.cached_find_by_beta_and_alpha('B', 'A', { :expires_in => 10 })
+    end
+
+    # A missing argument used to become nil, and the finder then cached a
+    # record under a key built from that nil.
+    it 'raises ArgumentError when an argument is missing' do
+      expect do
+        ConfigurationClass.cached_find_by_beta_and_alpha('B')
+      end.to raise_error(::ArgumentError, /given 1, expected 2/)
+    end
+  end
+
   describe '._method_missing_name' do
     it 'returns nil when the method name is not a finder' do
       expect(ConfigurationClass._method_missing_name(:not_a_finder)).to be_nil

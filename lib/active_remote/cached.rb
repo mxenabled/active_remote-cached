@@ -128,37 +128,38 @@ module ActiveRemote
         "#{::Regexp.last_match(1)}#{params.sort.join('_and_')}#{::Regexp.last_match(3)}".to_sym
       end
 
-      # rubocop:disable Metrics/AbcSize
       def _args_in_sorted_order(m, args)
         regex = /cached_(?:delete|exist_search|search|exist_find|find)_by_([0-9a-zA-Z_]*)(!|\?)?/
 
-        method_name = _method_missing_name(m)
+        called_match = m.match(regex)
+        sorted_match = _method_missing_name(m).match(regex)
 
-        match_1 = m.match(regex)
-        match_2 = method_name.match(regex)
+        return args unless called_match[1] && sorted_match[1]
 
-        args_in_order = []
+        called_field_names = called_match[1].split('_and_')
+        sorted_field_names = sorted_match[1].split('_and_')
 
-        if match_1[1] && match_2[1]
-          orignal_args_name = match_1[1].split('_and_')
-          args_names_in_order = match_2[1].split('_and_')
-
-          args_names_in_order.each do |arg_name|
-            index = orignal_args_name.index(arg_name)
-            args_in_order << args[index]
-          end
-
-          if args.size > args_in_order.size
-            # Add options if passed
-            args_in_order << args.last
-          end
-
-          args_in_order
-        else
-          args
-        end
+        _reorder_args(m, args, called_field_names, sorted_field_names)
       end
-      # rubocop:enable Metrics/AbcSize
+
+      def _reorder_args(m, args, called_field_names, sorted_field_names)
+        if args.size < called_field_names.size
+          raise ::ArgumentError,
+                "wrong number of arguments to #{m} (given #{args.size}, expected #{called_field_names.size})"
+        end
+
+        args_in_order = sorted_field_names.map do |field_name|
+          index = called_field_names.index(field_name)
+          raise ::ArgumentError, "#{m} has no argument named #{field_name}" if index.nil?
+
+          args[index]
+        end
+
+        # Add the options hash if the caller passed one.
+        args_in_order << args.last if args.size > called_field_names.size
+
+        args_in_order
+      end
 
       # rubocop:disable Metrics/AbcSize
       def _create_cached_finder_for(cached_finder_key, options = {})
