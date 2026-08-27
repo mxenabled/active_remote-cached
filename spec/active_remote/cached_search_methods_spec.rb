@@ -26,9 +26,7 @@ class SearchMethodClass
 end
 
 describe SearchMethodClass do
-  let(:versioned_prefix) do
-    "#{RUBY_ENGINE_VERSION}:#{ActiveSupport::VERSION::STRING}"
-  end
+  let(:versioned_prefix) { ::ActiveRemote::Cached::RUBY_AND_ACTIVE_SUPPORT_VERSION }
 
   describe 'API' do
     it "creates 'cached_search_by_foo'" do
@@ -247,6 +245,35 @@ describe SearchMethodClass do
       expect do
         SearchMethodClass.cached_search_by_foo!(:foo, :expires_in => 200)
       end.to raise_error ::ActiveRemote::RemoteRecordNotFound
+    end
+
+    it 'raises ActiveRemote::RemoteRecordNotFound when the block returns no results' do
+      expect(SearchMethodClass).not_to receive(:search)
+      expect do
+        SearchMethodClass.cached_search_by_foo!(:foo) { [] }
+      end.to raise_error ::ActiveRemote::RemoteRecordNotFound
+    end
+
+    it 'raises ActiveRemote::RemoteRecordNotFound when the first result is nil' do
+      expect(SearchMethodClass).not_to receive(:search)
+      expect do
+        SearchMethodClass.cached_search_by_foo!(:foo) { [nil] }
+      end.to raise_error ::ActiveRemote::RemoteRecordNotFound
+    end
+
+    it 'does not cache the results when it raises' do
+      expect do
+        SearchMethodClass.cached_search_by_foo!(:foo) { [] }
+      end.to raise_error ::ActiveRemote::RemoteRecordNotFound
+
+      expect(SearchMethodClass.cached_exist_search_by_foo?(:foo)).to eq(false)
+    end
+
+    it 'caches the results when they are present' do
+      expect(SearchMethodClass).to receive(:search).once.and_return([:hello])
+
+      expect(SearchMethodClass.cached_search_by_foo!(:foo)).to eq([:hello])
+      expect(SearchMethodClass.cached_search_by_foo!(:foo)).to eq([:hello])
     end
   end
 

@@ -1,5 +1,7 @@
 # ActiveRemote::Cached
 
+[![CI](https://github.com/skunkworker/active_remote-cached/actions/workflows/ci.yml/badge.svg)](https://github.com/skunkworker/active_remote-cached/actions/workflows/ci.yml)
+
 Provides cached finders for ActiveRemote models that allow a caching provider to cache the result of a query.
 
 ## Installation
@@ -86,6 +88,86 @@ Each finder as takes an optional options hash that will override the options pas
 
 ```ruby
 customer = ::Customer.cached_find_by_id(1, :expires_in => 15.minutes)
+```
+
+## Development
+
+Install the dependencies:
+
+```shell
+bundle install
+```
+
+Run the specs against the default gemfile:
+
+```shell
+bundle exec rspec
+```
+
+Run RuboCop:
+
+```shell
+bundle exec rubocop
+```
+
+### Test matrix
+
+This gem uses [appraisal](https://github.com/thoughtbot/appraisal) to test against
+several `active_remote` versions. The `Appraisals` file defines each version.
+
+Generate the gemfiles. They are not committed:
+
+```shell
+bundle exec appraisal generate
+```
+
+Install every appraisal:
+
+```shell
+bundle exec appraisal install
+```
+
+Run the specs against every appraisal:
+
+```shell
+bundle exec appraisal rspec
+```
+
+Run the specs against one appraisal:
+
+```shell
+bundle exec appraisal active_remote-8.0 rspec
+```
+
+Remove the generated gemfiles:
+
+```shell
+bundle exec appraisal clean
+```
+
+CI runs this matrix on Ruby 3.1, Ruby 3.4, JRuby 9.4, and JRuby 10.0.
+`active_remote` 8.0 requires Ruby 3.2 or later. CI does not run that
+version on Ruby 3.1 or JRuby 9.4.
+
+## Known behavior
+
+Two behaviors are recorded in the specs. Neither is fixed. Read
+`spec/active_remote/cached_spec.rb` for the specs that describe them.
+
+### Finder name matching is not anchored
+
+`_method_missing_name` matches a finder name inside a longer method name. A
+method named `not_cached_find_by_guid` resolves to `cached_find_by_guid`.
+
+### A subclass has its own empty cached_methods list
+
+A subclass inherits the finder methods its parent defined. It does not inherit
+the `cached_methods` list. The parent accepts the finder arguments in any
+order. The subclass accepts them only in the order the method was defined.
+
+```ruby
+Parent.cached_find_by_beta_and_alpha('B', 'A')  # works
+Child.cached_find_by_beta_and_alpha('B', 'A')   # raises NoMethodError
 ```
 
 ## Contributing

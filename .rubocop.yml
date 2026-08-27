@@ -20,6 +20,12 @@ Metrics/BlockLength:
   Exclude:
     - 'spec/**/*'
 
+# ActiveSupport cache #fetch only calls the block on a miss, so the block form
+# is not the same as the Hash#fetch default value form.
+Style/RedundantFetchBlock:
+  Exclude:
+    - 'spec/active_remote/cached/cache_spec.rb'
+
 Naming/FileName:
   Exclude:
     - 'lib/active_remote-cached.rb'

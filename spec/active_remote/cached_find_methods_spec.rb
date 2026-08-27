@@ -21,9 +21,7 @@ class FindMethodClass
 end
 
 describe FindMethodClass do
-  let(:versioned_prefix) do
-    "#{RUBY_ENGINE_VERSION}:#{ActiveSupport::VERSION::STRING}"
-  end
+  let(:versioned_prefix) { ::ActiveRemote::Cached::RUBY_AND_ACTIVE_SUPPORT_VERSION }
 
   describe 'API' do
     it "creates 'cached_find_by_foo'" do

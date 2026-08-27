@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'ostruct'
 require 'rubygems'
 require 'bundler'
 Bundler.require(:default, :development, :test)

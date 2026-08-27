@@ -5,12 +5,12 @@ require 'spec_helper'
 class DeleteMethodClass
   include ::ActiveRemote::Cached
 
-  def self.find
-    nil
+  def self.find(*)
+    :record
   end
 
-  def self.search
-    nil
+  def self.search(*)
+    [:record]
   end
 
   cached_finders_for :guid
@@ -47,6 +47,51 @@ describe DeleteMethodClass do
 
     it "creates 'cached_delete_by_client_guid_and_user_guid_and_derp'" do
       expect(DeleteMethodClass).to respond_to(:cached_delete_by_client_guid_and_user_guid_and_derp)
+    end
+  end
+
+  describe '#cached_delete_by_guid' do
+    before do
+      ::ActiveRemote::Cached.cache(HashCache.new)
+    end
+
+    after do
+      ::ActiveRemote::Cached.default_options({})
+    end
+
+    it 'deletes the find cache key' do
+      DeleteMethodClass.cached_find_by_guid(:guid)
+      expect(DeleteMethodClass.cached_exist_find_by_guid?(:guid)).to eq(true)
+
+      DeleteMethodClass.cached_delete_by_guid(:guid)
+
+      expect(DeleteMethodClass.cached_exist_find_by_guid?(:guid)).to eq(false)
+    end
+
+    it 'deletes the search cache key' do
+      DeleteMethodClass.cached_search_by_guid(:guid)
+      expect(DeleteMethodClass.cached_exist_search_by_guid?(:guid)).to eq(true)
+
+      DeleteMethodClass.cached_delete_by_guid(:guid)
+
+      expect(DeleteMethodClass.cached_exist_search_by_guid?(:guid)).to eq(false)
+    end
+
+    it 'does not raise when the cache keys are not present' do
+      expect { DeleteMethodClass.cached_delete_by_guid(:missing) }.not_to raise_error
+    end
+
+    describe 'namespaced cache' do
+      it 'deletes the namespaced find and search cache keys' do
+        expect(::ActiveRemote::Cached.cache).to receive(:delete).with(
+          [::ActiveRemote::Cached::RUBY_AND_ACTIVE_SUPPORT_VERSION, 'MyApp', DeleteMethodClass.name, '#find', 'guid']
+        )
+        expect(::ActiveRemote::Cached.cache).to receive(:delete).with(
+          [::ActiveRemote::Cached::RUBY_AND_ACTIVE_SUPPORT_VERSION, 'MyApp', DeleteMethodClass.name, '#search', 'guid']
+        )
+
+        DeleteMethodClass.cached_delete_by_guid(:guid, :namespace => 'MyApp')
+      end
     end
   end
 end

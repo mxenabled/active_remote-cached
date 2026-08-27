@@ -1,14 +1,9 @@
 # frozen_string_literal: true
 
 require 'bundler/gem_tasks'
-require 'rake/testtask'
+require 'rspec/core/rake_task'
+require 'appraisal'
 
-Rake::TestTask.new do |t|
-  t.libs.push 'lib'
-  t.libs.push 'spec'
-  t.pattern = 'spec/**/*_spec.rb'
-  t.verbose = true
-end
+::RSpec::Core::RakeTask.new(:spec)
 
-task :spec => :test
 task :default => :spec

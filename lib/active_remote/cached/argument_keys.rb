@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module ActiveRemote
   module Cached
     class ArgumentKeys
@@ -23,23 +25,16 @@ module ActiveRemote
       def initialize(*arguments, options)
         @options = options
         @arguments = arguments.flatten.compact
-        @argument_string = ''
-
-        @arguments.each do |argument|
-          @argument_string << argument.to_s
-        end
+        @argument_string = @arguments.join
       end
 
       def cache_key
         return @argument_string.gsub(REMOVE_CHARACTERS, '') if remove_characters?
+        return @argument_string unless replace_characters?
 
-        if replace_characters?
-          REPLACE_MAP.each do |character, replacement|
-            @argument_string.gsub!(character, replacement)
-          end
+        REPLACE_MAP.inject(@argument_string) do |key, (character, replacement)|
+          key.gsub(character, replacement)
         end
-
-        @argument_string
       end
 
       def to_s

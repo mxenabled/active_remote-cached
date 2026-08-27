@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ${{ matrix.ruby }} / ${{ matrix.appraisal }}
+    runs-on: ubuntu-latest
+    env:
+      BUNDLE_GEMFILE: ${{ github.workspace }}/Gemfile
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby:
+          - '3.1'
+          - '3.4'
+          - jruby-9.4
+          - jruby-10.0
+        appraisal:
+          - active_remote-6.1
+          - active_remote-7.0
+          - active_remote-7.1
+          - active_remote-7.2
+          - active_remote-8.0
+        exclude:
+          # active_remote 8.0 requires ruby 3.2 or later.
+          # jruby-9.4 is ruby 3.1 compatible.
+          - ruby: '3.1'
+            appraisal: active_remote-8.0
+          - ruby: jruby-9.4
+            appraisal: active_remote-8.0
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+
+      - name: Generate the appraisal gemfiles
+        run: bundle exec appraisal generate
+
+      # bundler-cache above only caches the root Gemfile. The appraisal
+      # gemfiles do not exist until the step above runs, so they need their own
+      # cache. Without this every job installs active_remote from cold.
+      - name: Cache the appraisal dependencies
+        uses: actions/cache@v4
+        with:
+          path: gemfiles/vendor/bundle
+          key: ${{ runner.os }}-${{ matrix.ruby }}-${{ matrix.appraisal }}-${{ hashFiles('Appraisals', '*.gemspec') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.ruby }}-${{ matrix.appraisal }}-
+
+      - name: Install the appraisal dependencies
+        run: |
+          bundle exec appraisal ${{ matrix.appraisal }} bundle config set --local path "$GITHUB_WORKSPACE/gemfiles/vendor/bundle"
+          bundle exec appraisal ${{ matrix.appraisal }} bundle install --jobs 4 --retry 3
+
+      - name: Run the specs
+        run: bundle exec appraisal ${{ matrix.appraisal }} rspec
+
+  rubocop:
+    name: RuboCop
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+          bundler-cache: true
+
+      - name: Run RuboCop
+        run: bundle exec rubocop --parallel

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'active_support'
 require 'active_support/cache'
 require 'active_support/concern'
@@ -192,6 +194,10 @@ module ActiveRemote
         "cached_search_by_#{arguments.sort.join('_and_')}"
       end
 
+      def _expanded_search_args(method_arguments)
+        method_arguments.map { |method_argument| ":#{method_argument} => #{method_argument}," }.join
+      end
+
       def _define_cached_delete_method(method_name, *method_arguments, cached_finder_options)
         method_arguments.flatten!
         expanded_method_args = method_arguments.join(',')
@@ -291,10 +297,7 @@ module ActiveRemote
         sorted_method_args = method_arguments.sort.join(',')
         cached_methods << method_name
 
-        expanded_search_args = ''
-        method_arguments.each do |method_argument|
-          expanded_search_args << ":#{method_argument} => #{method_argument},"
-        end
+        expanded_search_args = _expanded_search_args(method_arguments)
 
         class_eval <<-RUBY, __FILE__, __LINE__ + 1
           # def self.cached_find_by_user_guid(user_guid, options = {})
@@ -336,10 +339,7 @@ module ActiveRemote
         sorted_method_args = method_arguments.sort.join(',')
         cached_methods << method_name
 
-        expanded_search_args = ''
-        method_arguments.each do |method_argument|
-          expanded_search_args << ":#{method_argument} => #{method_argument},"
-        end
+        expanded_search_args = _expanded_search_args(method_arguments)
 
         class_eval <<-RUBY, __FILE__, __LINE__ + 1
           # def self.cached_search_by_user_guid(user_guid, options = {})
@@ -385,10 +385,7 @@ module ActiveRemote
         sorted_method_args = method_arguments.sort.join(',')
         cached_methods << method_name
 
-        expanded_search_args = ''
-        method_arguments.each do |method_argument|
-          expanded_search_args << ":#{method_argument} => #{method_argument},"
-        end
+        expanded_search_args = _expanded_search_args(method_arguments)
 
         class_eval <<-RUBY, __FILE__, __LINE__ + 1
           # def self.cached_search_by_user_guid!(user_guid, options = {})
