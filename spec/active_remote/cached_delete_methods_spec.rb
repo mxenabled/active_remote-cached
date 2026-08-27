@@ -84,10 +84,12 @@ describe DeleteMethodClass do
     describe 'namespaced cache' do
       it 'deletes the namespaced find and search cache keys' do
         expect(::ActiveRemote::Cached.cache).to receive(:delete).with(
-          [::ActiveRemote::Cached::RUBY_AND_ACTIVE_SUPPORT_VERSION, 'MyApp', DeleteMethodClass.name, '#find', 'guid']
+          [::ActiveRemote::Cached::RUBY_AND_ACTIVE_SUPPORT_VERSION, 'MyApp', DeleteMethodClass.name, '#find',
+           'guid.guid']
         )
         expect(::ActiveRemote::Cached.cache).to receive(:delete).with(
-          [::ActiveRemote::Cached::RUBY_AND_ACTIVE_SUPPORT_VERSION, 'MyApp', DeleteMethodClass.name, '#search', 'guid']
+          [::ActiveRemote::Cached::RUBY_AND_ACTIVE_SUPPORT_VERSION, 'MyApp', DeleteMethodClass.name, '#search',
+           'guid.guid']
         )
 
         DeleteMethodClass.cached_delete_by_guid(:guid, :namespace => 'MyApp')

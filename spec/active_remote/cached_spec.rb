@@ -2,6 +2,9 @@
 
 require 'spec_helper'
 
+# 5.minutes below. The library does not require this itself.
+require 'active_support/core_ext/numeric/time'
+
 class ConfigurationClass
   include ::ActiveRemote::Cached
 
@@ -35,6 +38,24 @@ class AliasFinderClass
 end
 
 class ChildFinderClass < ConfigurationClass; end
+
+class DurationOptionClass
+  include ::ActiveRemote::Cached
+
+  def self.find(*)
+    :find_result
+  end
+
+  def self.search(*)
+    [:search_result]
+  end
+
+  # 5.minutes has no literal form. The options must not be interpolated into
+  # the generated source.
+  cached_finders_for :guid, :expires_in => 5.minutes
+end
+
+class DurationChildClass < DurationOptionClass; end
 
 describe ::ActiveRemote::Cached do
   let(:versioned_prefix) { ::ActiveRemote::Cached::RUBY_AND_ACTIVE_SUPPORT_VERSION }
@@ -87,7 +108,7 @@ describe ::ActiveRemote::Cached do
   describe 'RUBY_AND_ACTIVE_SUPPORT_VERSION' do
     it 'prefixes every cache key' do
       expect(::ActiveRemote::Cached.cache).to receive(:fetch).with(
-        [versioned_prefix, ConfigurationClass.name, '#find', 'guid'], {}
+        [versioned_prefix, ConfigurationClass.name, '#find', 'guid.guid'], {}
       ).and_return(:find_result)
 
       ConfigurationClass.cached_find_by_guid(:guid)
@@ -115,7 +136,7 @@ describe ::ActiveRemote::Cached do
 
     it 'passes the options through to the fetch call' do
       expect(::ActiveRemote::Cached.cache).to receive(:fetch).with(
-        [versioned_prefix, ConfigurationClass.name, '#find', 'guid'], { :expires_in => 200 }
+        [versioned_prefix, ConfigurationClass.name, '#find', 'guid.guid'], { :expires_in => 200 }
       ).and_return(:hello)
 
       expect(ConfigurationClass.cached_find({ :guid => :guid }, :expires_in => 200)).to eq(:hello)
@@ -177,6 +198,28 @@ describe ::ActiveRemote::Cached do
     end
   end
 
+  describe '._args_in_sorted_order' do
+    it 'reorders the arguments to match the defined method' do
+      expect(ConfigurationClass).to receive(:cached_find_by_alpha_and_beta).with('A', 'B')
+
+      ConfigurationClass.cached_find_by_beta_and_alpha('B', 'A')
+    end
+
+    it 'passes the options hash through as the last argument' do
+      expect(ConfigurationClass).to receive(:cached_find_by_alpha_and_beta).with('A', 'B', { :expires_in => 10 })
+
+      ConfigurationClass.cached_find_by_beta_and_alpha('B', 'A', { :expires_in => 10 })
+    end
+
+    # A missing argument used to become nil, and the finder then cached a
+    # record under a key built from that nil.
+    it 'raises ArgumentError when an argument is missing' do
+      expect do
+        ConfigurationClass.cached_find_by_beta_and_alpha('B')
+      end.to raise_error(::ArgumentError, /given 1, expected 2/)
+    end
+  end
+
   describe '._method_missing_name' do
     it 'returns nil when the method name is not a finder' do
       expect(ConfigurationClass._method_missing_name(:not_a_finder)).to be_nil
@@ -194,6 +237,71 @@ describe ::ActiveRemote::Cached do
       expect(ConfigurationClass._method_missing_name(:not_cached_find_by_guid)).to eq(
         :cached_find_by_guid
       )
+    end
+  end
+
+  describe 'a finder whose definition fails' do
+    let(:broken_class) do
+      Class.new do
+        include ::ActiveRemote::Cached
+
+        def self.find(*)
+          :find_result
+        end
+
+        def self.search(*)
+          [:search_result]
+        end
+      end
+    end
+
+    # cached_methods used to be written before class_eval ran, so a failure
+    # registered a name with no method behind it. method_missing then
+    # dispatched to that same missing name and recursed until the stack ran out.
+    it 'registers no method name' do
+      expect { broken_class.cached_finders_for :'bad-name' }.to raise_error(::SyntaxError)
+
+      expect(broken_class.cached_methods).to eq([])
+    end
+
+    it 'raises NoMethodError rather than recursing' do
+      begin
+        broken_class.cached_finders_for :'bad-name'
+      rescue ::SyntaxError # rubocop:disable Lint/SuppressedException
+      end
+
+      expect { broken_class.cached_delete_by_guid('x') }.to raise_error(::NoMethodError)
+    end
+  end
+
+  describe 'a finder declared with an option that has no literal form' do
+    it 'defines the finder methods' do
+      expect(DurationOptionClass).to respond_to(:cached_find_by_guid)
+      expect(DurationOptionClass).to respond_to(:cached_search_by_guid)
+    end
+
+    it 'passes the option through to the fetch call' do
+      expect(::ActiveRemote::Cached.cache).to receive(:fetch).with(
+        [versioned_prefix, DurationOptionClass.name, '#find', 'guid.guid'], { :expires_in => 5.minutes }
+      ).and_return(:hello)
+
+      expect(DurationOptionClass.cached_find_by_guid(:guid)).to eq(:hello)
+    end
+
+    it 'lets a local option override the declared option' do
+      expect(::ActiveRemote::Cached.cache).to receive(:fetch).with(
+        [versioned_prefix, DurationOptionClass.name, '#find', 'guid.guid'], { :expires_in => 200 }
+      ).and_return(:hello)
+
+      expect(DurationOptionClass.cached_find_by_guid(:guid, :expires_in => 200)).to eq(:hello)
+    end
+
+    it 'applies the declared option in a subclass' do
+      expect(::ActiveRemote::Cached.cache).to receive(:fetch).with(
+        [versioned_prefix, DurationChildClass.name, '#find', 'guid.guid'], { :expires_in => 5.minutes }
+      ).and_return(:hello)
+
+      expect(DurationChildClass.cached_find_by_guid(:guid)).to eq(:hello)
     end
   end
 

@@ -164,7 +164,7 @@ describe SearchMethodClass do
 
     it 'merges the default options in for the fetch call' do
       expect(::ActiveRemote::Cached.cache).to receive(:fetch).with(
-        [versioned_prefix, SearchMethodClass.name, '#search', 'guid'], { :expires_in => 100 }
+        [versioned_prefix, SearchMethodClass.name, '#search', 'guid.guid'], { :expires_in => 100 }
       ).and_return(:hello)
 
       expect(SearchMethodClass).not_to receive(:search)
@@ -173,7 +173,7 @@ describe SearchMethodClass do
 
     it 'overrides the default options with local options for the fetch call' do
       expect(::ActiveRemote::Cached.cache).to receive(:fetch).with(
-        [versioned_prefix, SearchMethodClass.name, '#search', 'guid'], { :expires_in => 200 }
+        [versioned_prefix, SearchMethodClass.name, '#search', 'guid.guid'], { :expires_in => 200 }
       ).and_return(:hello)
 
       expect(SearchMethodClass).not_to receive(:search)
@@ -187,7 +187,7 @@ describe SearchMethodClass do
 
       it 'uses the namespace as a prefix to the cache key' do
         expect(::ActiveRemote::Cached.cache).to receive(:fetch).with(
-          [versioned_prefix, 'MyApp', SearchMethodClass.name, '#search', 'guid'], { :expires_in => 100 }
+          [versioned_prefix, 'MyApp', SearchMethodClass.name, '#search', 'guid.guid'], { :expires_in => 100 }
         ).and_return(:hello)
 
         expect(SearchMethodClass).not_to receive(:search)
@@ -208,7 +208,7 @@ describe SearchMethodClass do
 
     it 'overrides the default options with cached_finder options for the fetch call' do
       expect(::ActiveRemote::Cached.cache).to receive(:fetch).with(
-        [versioned_prefix, SearchMethodClass.name, '#search', 'foo'], { :expires_in => 500 }
+        [versioned_prefix, SearchMethodClass.name, '#search', 'foo.foo'], { :expires_in => 500 }
       ).and_return(:hello)
 
       expect(SearchMethodClass).not_to receive(:find)
@@ -217,7 +217,7 @@ describe SearchMethodClass do
 
     it 'overrides the cached_finder options with local options for the fetch call' do
       expect(::ActiveRemote::Cached.cache).to receive(:fetch).with(
-        [versioned_prefix, SearchMethodClass.name, '#search', 'foo'], { :expires_in => 200 }
+        [versioned_prefix, SearchMethodClass.name, '#search', 'foo.foo'], { :expires_in => 200 }
       ).and_return(:hello)
 
       expect(SearchMethodClass).not_to receive(:find)
@@ -259,6 +259,28 @@ describe SearchMethodClass do
       expect do
         SearchMethodClass.cached_search_by_foo!(:foo) { [nil] }
       end.to raise_error ::ActiveRemote::RemoteRecordNotFound
+    end
+
+    it 'raises ActiveRemote::RemoteRecordNotFound when the results are nil' do
+      expect(SearchMethodClass).to receive(:search).and_return(nil)
+      expect do
+        SearchMethodClass.cached_search_by_foo!(:foo)
+      end.to raise_error ::ActiveRemote::RemoteRecordNotFound
+    end
+
+    it 'names the model class in the error' do
+      expect(SearchMethodClass).to receive(:search).and_return([])
+      expect do
+        SearchMethodClass.cached_search_by_foo!(:foo)
+      end.to raise_error(::ActiveRemote::RemoteRecordNotFound, /SearchMethodClass/)
+    end
+
+    it 'reports the model class on the error' do
+      expect(SearchMethodClass).to receive(:search).and_return([])
+
+      SearchMethodClass.cached_search_by_foo!(:foo)
+    rescue ::ActiveRemote::RemoteRecordNotFound => e
+      expect(e.remote_record_class).to eq(SearchMethodClass)
     end
 
     it 'does not cache the results when it raises' do

@@ -3,33 +3,40 @@
 require 'spec_helper'
 
 describe ::ActiveRemote::Cached::Cache do
+  let(:invalid_provider_error) { ::ActiveRemote::Cached::Cache::InvalidCacheProvider }
   let(:cache_provider) { ::ActiveSupport::Cache::MemoryStore.new }
   let(:cache) { ::ActiveRemote::Cached::Cache.new(cache_provider) }
 
   describe 'API' do
     it 'validates #delete present' do
       cache = OpenStruct.new(:write => nil, :fetch => nil, :read => nil, :exist? => nil)
-      expect { ::ActiveRemote::Cached.cache(cache) }.to raise_error(RuntimeError, /respond_to.*delete/i)
+      expect { ::ActiveRemote::Cached.cache(cache) }.to raise_error(invalid_provider_error, /respond_to.*delete/i)
     end
 
     it 'validates #exist? present' do
       cache = OpenStruct.new(:write => nil, :delete => nil, :read => nil, :fetch => nil)
-      expect { ::ActiveRemote::Cached.cache(cache) }.to raise_error(RuntimeError, /respond_to.*exist/i)
+      expect { ::ActiveRemote::Cached.cache(cache) }.to raise_error(invalid_provider_error, /respond_to.*exist/i)
     end
 
     it 'validates #fetch present' do
       cache = OpenStruct.new(:write => nil, :delete => nil, :read => nil, :exist? => nil)
-      expect { ::ActiveRemote::Cached.cache(cache) }.to raise_error(RuntimeError, /respond_to.*fetch/i)
+      expect { ::ActiveRemote::Cached.cache(cache) }.to raise_error(invalid_provider_error, /respond_to.*fetch/i)
     end
 
     it 'validates #read present' do
       cache = OpenStruct.new(:write => nil, :delete => nil, :fetch => nil, :exist? => nil)
-      expect { ::ActiveRemote::Cached.cache(cache) }.to raise_error(RuntimeError, /respond_to.*read/i)
+      expect { ::ActiveRemote::Cached.cache(cache) }.to raise_error(invalid_provider_error, /respond_to.*read/i)
     end
 
     it 'validates #write present' do
       cache = OpenStruct.new(:read => nil, :delete => nil, :fetch => nil, :exist? => nil)
-      expect { ::ActiveRemote::Cached.cache(cache) }.to raise_error(RuntimeError, /respond_to.*write/i)
+      expect { ::ActiveRemote::Cached.cache(cache) }.to raise_error(invalid_provider_error, /respond_to.*write/i)
+    end
+  end
+
+  describe '#nested_caching?' do
+    it 'is false before nested caching is enabled' do
+      expect(cache.nested_caching?).to eq(false)
     end
   end
 
@@ -71,6 +78,53 @@ describe ::ActiveRemote::Cached::Cache do
     end
   end
 
+  describe '#fetch round trips' do
+    let(:counting_provider) do
+      Class.new(::ActiveSupport::Cache::MemoryStore) do
+        def initialize(*args)
+          @calls = []
+          super
+        end
+
+        attr_reader :calls
+
+        def fetch(*args, **options, &block)
+          @calls << :fetch
+          super
+        end
+
+        def write(*args, **options)
+          @calls << :write
+          super
+        end
+
+        def delete(*args, **options)
+          @calls << :delete
+          super
+        end
+      end.new
+    end
+
+    # The provider used to write the nil and then take a second round trip to
+    # delete it. :skip_nil makes the provider skip the write.
+    it 'takes one provider call for a nil value' do
+      cache = ::ActiveRemote::Cached::Cache.new(counting_provider)
+
+      cache.fetch('key') { nil }
+
+      expect(counting_provider.calls).to eq([:fetch])
+    end
+
+    it 'still writes a nil when :allow_nil is given' do
+      cache = ::ActiveRemote::Cached::Cache.new(counting_provider)
+
+      cache.fetch('key', :allow_nil => true) { nil }
+
+      expect(counting_provider.calls).to eq(%i[fetch write])
+      expect(counting_provider.exist?('key')).to eq(true)
+    end
+  end
+
   describe '#enable_nested_caching!' do
     it 'writes to the cache provider only until nested caching is enabled' do
       cache.write('key', 'value')
@@ -109,6 +163,26 @@ describe ::ActiveRemote::Cached::Cache do
         cache_provider.write('key', 'provider')
 
         expect(cache.exist?('key')).to eq(true)
+      end
+
+      it 'reports that nested caching is on' do
+        expect(cache.nested_caching?).to eq(true)
+      end
+
+      # A new Cache starts with nested caching off, so swapping the provider
+      # used to turn the setting off without saying so.
+      it 'keeps nested caching on when the cache provider is replaced' do
+        original_cache = ::ActiveRemote::Cached.cache
+
+        ::ActiveRemote::Cached.cache(cache_provider)
+        ::ActiveRemote::Cached.cache.enable_nested_caching!
+        ::ActiveRemote::Cached.cache(::ActiveSupport::Cache::MemoryStore.new)
+
+        expect(::ActiveRemote::Cached.cache.nested_caching?).to eq(true)
+      ensure
+        # .cache now carries the nested setting forward, so reset the module
+        # rather than call it again.
+        ::ActiveRemote::Cached.instance_variable_set(:@cache_provider, original_cache)
       end
 
       # #read joins the two providers with ||, so a false value in the nested

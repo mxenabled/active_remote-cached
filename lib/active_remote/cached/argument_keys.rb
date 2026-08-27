@@ -6,21 +6,61 @@ module ActiveRemote
       attr_reader :arguments, :argument_string, :options
 
       REMOVE_CHARACTERS = /[[:space:]+=><{}\[\];:\-,]/
-      REPLACE_MAP = [
-        [' ', 'SP'],
-        ['+', 'PL'],
-        ['=', 'EQ'],
-        ['>', 'GT'],
-        ['<', 'LT'],
-        ['{', 'LB'],
-        ['}', 'RB'],
-        ['[', 'LB2'],
-        [']', 'RB2'],
-        [';', 'SC'],
-        [':', 'CO'],
-        ['-', 'DA'],
-        [',', 'COM']
-      ].freeze
+      # Covers the same characters as REMOVE_CHARACTERS. A tab or a newline
+      # left in a key breaks the Memcached protocol.
+      REPLACE_MAP = {
+        ' ' => 'SP',
+        "\t" => 'TB',
+        "\n" => 'NL',
+        "\r" => 'CR',
+        "\f" => 'FF',
+        "\v" => 'VT',
+        '+' => 'PL',
+        '=' => 'EQ',
+        '>' => 'GT',
+        '<' => 'LT',
+        '{' => 'LB',
+        '}' => 'RB',
+        '[' => 'LB2',
+        ']' => 'RB2',
+        ';' => 'SC',
+        ':' => 'CO',
+        '-' => 'DA',
+        ',' => 'COM'
+      }.freeze
+      REPLACE_CHARACTERS = ::Regexp.union(REPLACE_MAP.keys)
+
+      # The separators below are absent from both REMOVE_CHARACTERS and
+      # REPLACE_MAP, so they survive either option. escape_value/1 escapes them
+      # inside a value, which makes the key one-to-one with the arguments.
+      FIELD_SEPARATOR = '.'
+      PAIR_SEPARATOR = '/'
+      ESCAPE_MAP = { '%' => '%25', FIELD_SEPARATOR => '%2E', PAIR_SEPARATOR => '%2F' }.freeze
+      ESCAPE_CHARACTERS = %r{[%./]}
+
+      # Build a key that names each field, so that two finders with the same
+      # values do not share one cache entry.
+      #
+      #   for_fields([:alpha, :beta], ['x', 'y'], {}).cache_key
+      #   # => "alpha.x/beta.y"
+      #
+      def self.for_fields(field_names, values, options)
+        pairs = field_names.each_with_index.map do |field_name, index|
+          "#{field_name}#{FIELD_SEPARATOR}#{normalize_value(values[index])}"
+        end
+
+        new(pairs.join(PAIR_SEPARATOR), options)
+      end
+
+      def self.normalize_value(value)
+        [value].flatten.compact.map { |element| escape_value(element) }.join(FIELD_SEPARATOR)
+      end
+      private_class_method :normalize_value
+
+      def self.escape_value(value)
+        value.to_s.gsub(ESCAPE_CHARACTERS, ESCAPE_MAP)
+      end
+      private_class_method :escape_value
 
       def initialize(*arguments, options)
         @options = options
@@ -32,9 +72,8 @@ module ActiveRemote
         return @argument_string.gsub(REMOVE_CHARACTERS, '') if remove_characters?
         return @argument_string unless replace_characters?
 
-        REPLACE_MAP.inject(@argument_string) do |key, (character, replacement)|
-          key.gsub(character, replacement)
-        end
+        # One pass, rather than one gsub for each entry in the map.
+        @argument_string.gsub(REPLACE_CHARACTERS, REPLACE_MAP)
       end
 
       def to_s
