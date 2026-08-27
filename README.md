@@ -149,6 +149,44 @@ CI runs this matrix on Ruby 3.1, Ruby 3.4, JRuby 9.4, and JRuby 10.0.
 `active_remote` 8.0 requires Ruby 3.2 or later. CI does not run that
 version on Ruby 3.1 or JRuby 9.4.
 
+## Upgrading to 1.2.0
+
+### Every cache key changes
+
+Before 1.2.0 the cache key held only the argument values, joined with no
+separator. Three different finders shared one cache entry:
+
+```ruby
+Customer.cached_find_by_name_and_email("x", "y")  # key: "xy"
+Customer.cached_find_by_city_and_state("x", "y")  # key: "xy"  same entry
+Customer.cached_find_by_id("xy")                  # key: "xy"  same entry
+```
+
+The key now names each field, so each finder gets its own entry:
+
+```ruby
+Customer.cached_find_by_name_and_email("x", "y")  # key: "email.y/name.x"
+```
+
+Every existing cache entry becomes a miss after the upgrade. Expect one cold
+period. The gem already causes this on an ActiveSupport upgrade, through
+`RUBY_AND_ACTIVE_SUPPORT_VERSION`.
+
+### A bad call now raises
+
+A dynamic finder called with too few arguments used to pass `nil` for the
+missing field and cache the result. It now raises `ArgumentError`:
+
+```ruby
+Customer.cached_find_by_email_and_name("only_one")  # => ArgumentError
+```
+
+### The cache provider validator raises a new class
+
+`ActiveRemote::Cached::Cache::InvalidCacheProvider` replaces the bare
+`RuntimeError` that `ActiveRemote::Cached.cache` raised for a provider that is
+missing a method.
+
 ## Known behavior
 
 Two behaviors are recorded in the specs. Neither is fixed. Read
@@ -161,9 +199,10 @@ method named `not_cached_find_by_guid` resolves to `cached_find_by_guid`.
 
 ### A subclass has its own empty cached_methods list
 
-A subclass inherits the finder methods its parent defined. It does not inherit
-the `cached_methods` list. The parent accepts the finder arguments in any
-order. The subclass accepts them only in the order the method was defined.
+A subclass inherits the finder methods its parent defined, and the options
+those finders were declared with. It does not inherit the `cached_methods`
+list. The parent accepts the finder arguments in any order. The subclass
+accepts them only in the order the method was defined.
 
 ```ruby
 Parent.cached_find_by_beta_and_alpha('B', 'A')  # works
