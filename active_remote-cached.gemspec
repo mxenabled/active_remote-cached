@@ -6,20 +6,18 @@ lib = File.expand_path('lib', __dir__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'active_remote/cached/version'
 
-HOMEPAGE = 'https://github.com/mxenabled/active_remote-cached'
+# Locals, not a constant or a def: `gem build` evals this file inside
+# Gem::Specification, so top-level definitions land on that class.
+homepage = 'https://github.com/mxenabled/active_remote-cached'
 
 # git ls-files returns nothing outside a checkout, so a build from a released
 # tarball needs the glob.
-def gem_files
-  files = if File.directory?(File.join(__dir__, '.git'))
-            `git ls-files`.split($INPUT_RECORD_SEPARATOR)
-          else
-            Dir.glob('{lib,spec}/**/*', File::FNM_DOTMATCH) +
-              %w[LICENSE.txt README.md Rakefile Appraisals active_remote-cached.gemspec]
-          end
-
-  files.reject { |file| File.directory?(file) }
-end
+gem_files = if File.directory?(File.join(__dir__, '.git'))
+              `git ls-files`.split($INPUT_RECORD_SEPARATOR)
+            else
+              Dir.glob('{lib,spec}/**/*', File::FNM_DOTMATCH) +
+                %w[LICENSE.txt README.md Rakefile Appraisals active_remote-cached.gemspec]
+            end
 
 Gem::Specification.new do |gem|
   gem.name          = 'active_remote-cached'
@@ -28,17 +26,17 @@ Gem::Specification.new do |gem|
   gem.email         = ['brandonsdewitt@gmail.com', 'devexperience@mx.com']
   gem.description   = ' Provides "cached" finders and a DSL to enumerate which finders should have cached versions '
   gem.summary       = ' Provides a configuration for caching mechanisms and finders on ActiveRemote models'
-  gem.homepage      = HOMEPAGE
+  gem.homepage      = homepage
   gem.license       = 'MIT'
 
   gem.metadata = {
-    'homepage_uri' => HOMEPAGE,
-    'source_code_uri' => HOMEPAGE,
+    'homepage_uri' => homepage,
+    'source_code_uri' => homepage,
     'rubygems_mfa_required' => 'true'
   }
 
   gem.required_ruby_version = '>= 3.1'
-  gem.files         = gem_files
+  gem.files         = gem_files.reject { |file| File.directory?(file) }
   gem.executables   = gem.files.grep(%r{^bin/}).map { |f| File.basename(f) }
   gem.require_paths = ['lib']
 
