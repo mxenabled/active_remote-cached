@@ -31,10 +31,19 @@ module ActiveRemote
       @cache_provider
     end
 
+    # Merges the given options into the current options, and returns the
+    # result. A later call adds to the options, so an app initializer keeps the
+    # :expires_in and :race_condition_ttl that the Rails railtie set before it.
     def self.default_options(options = nil)
-      @default_options = options if options
+      @default_options = default_options.merge(options) if options
 
       @default_options || {}
+    end
+
+    # Replaces the current options with the given options, and returns them.
+    # Pass an empty hash to clear the options.
+    def self.default_options_overwrite(options)
+      @default_options = options.dup
     end
 
     module ClassMethods

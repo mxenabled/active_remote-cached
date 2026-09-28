@@ -65,7 +65,7 @@ describe ::ActiveRemote::Cached do
   end
 
   after do
-    ::ActiveRemote::Cached.default_options({})
+    ::ActiveRemote::Cached.default_options_overwrite({})
   end
 
   describe '.cache' do
@@ -91,17 +91,76 @@ describe ::ActiveRemote::Cached do
       expect(::ActiveRemote::Cached.default_options).to eq(:expires_in => 100)
     end
 
-    # Passing nil reads the options. Callers must pass an empty hash to clear.
     it 'keeps the current options when nil is given' do
       ::ActiveRemote::Cached.default_options(:expires_in => 100)
 
       expect(::ActiveRemote::Cached.default_options(nil)).to eq(:expires_in => 100)
     end
 
-    it 'clears the current options when an empty hash is given' do
+    it 'keeps the current options when an empty hash is given' do
       ::ActiveRemote::Cached.default_options(:expires_in => 100)
 
-      expect(::ActiveRemote::Cached.default_options({})).to eq({})
+      expect(::ActiveRemote::Cached.default_options({})).to eq(:expires_in => 100)
+    end
+
+    # The Rails railtie sets :expires_in and :race_condition_ttl. An app
+    # initializer that sets one more option must not remove them.
+    it 'merges the given options into the current options' do
+      ::ActiveRemote::Cached.default_options(:expires_in => 100, :race_condition_ttl => 5)
+      ::ActiveRemote::Cached.default_options(:active_remote_cached_replace_characters => true)
+
+      expect(::ActiveRemote::Cached.default_options).to eq(
+        :expires_in => 100,
+        :race_condition_ttl => 5,
+        :active_remote_cached_replace_characters => true
+      )
+    end
+
+    it 'lets the given options win over the current options' do
+      ::ActiveRemote::Cached.default_options(:expires_in => 100)
+      ::ActiveRemote::Cached.default_options(:expires_in => 200)
+
+      expect(::ActiveRemote::Cached.default_options).to eq(:expires_in => 200)
+    end
+
+    it 'does not change a hash that the caller passed' do
+      first = { :expires_in => 100 }
+      ::ActiveRemote::Cached.default_options(first)
+      ::ActiveRemote::Cached.default_options(:race_condition_ttl => 5)
+
+      expect(first).to eq(:expires_in => 100)
+    end
+
+    it 'gives each finder call the merged options' do
+      ::ActiveRemote::Cached.default_options(:expires_in => 100)
+      ::ActiveRemote::Cached.default_options(:active_remote_cached_replace_characters => true)
+
+      expect(::ActiveRemote::Cached.cache).to receive(:fetch).with(
+        [versioned_prefix, ConfigurationClass.name, '#find', 'guid.guid'],
+        { :expires_in => 100, :active_remote_cached_replace_characters => true }
+      ).and_return(:find_result)
+
+      ConfigurationClass.cached_find_by_guid(:guid)
+    end
+  end
+
+  describe '.default_options_overwrite' do
+    it 'replaces the current options' do
+      ::ActiveRemote::Cached.default_options(:expires_in => 100, :race_condition_ttl => 5)
+      ::ActiveRemote::Cached.default_options_overwrite(:active_remote_cached_replace_characters => true)
+
+      expect(::ActiveRemote::Cached.default_options).to eq(:active_remote_cached_replace_characters => true)
+    end
+
+    it 'clears the current options when an empty hash is given' do
+      ::ActiveRemote::Cached.default_options(:expires_in => 100)
+      ::ActiveRemote::Cached.default_options_overwrite({})
+
+      expect(::ActiveRemote::Cached.default_options).to eq({})
+    end
+
+    it 'returns the new options' do
+      expect(::ActiveRemote::Cached.default_options_overwrite(:expires_in => 100)).to eq(:expires_in => 100)
     end
   end
 
