@@ -64,7 +64,7 @@ describe FindMethodClass do
     end
 
     after do
-      ::ActiveRemote::Cached.default_options({})
+      ::ActiveRemote::Cached.default_options_overwrite({})
     end
 
     it 'executes find_by_guid when cached_find with guid called' do
@@ -117,7 +117,7 @@ describe FindMethodClass do
     end
 
     after do
-      ::ActiveRemote::Cached.default_options({})
+      ::ActiveRemote::Cached.default_options_overwrite({})
     end
 
     it 'overrides the default options with cached_finder options for the fetch call' do

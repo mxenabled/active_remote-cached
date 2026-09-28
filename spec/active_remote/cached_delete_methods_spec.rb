@@ -56,7 +56,7 @@ describe DeleteMethodClass do
     end
 
     after do
-      ::ActiveRemote::Cached.default_options({})
+      ::ActiveRemote::Cached.default_options_overwrite({})
     end
 
     it 'deletes the find cache key' do

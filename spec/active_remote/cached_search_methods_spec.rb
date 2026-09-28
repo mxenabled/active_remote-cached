@@ -95,7 +95,7 @@ describe SearchMethodClass do
     end
 
     after do
-      ::ActiveRemote::Cached.default_options({})
+      ::ActiveRemote::Cached.default_options_overwrite({})
     end
 
     it 'executes the search block when a block is passed' do
@@ -203,7 +203,7 @@ describe SearchMethodClass do
     end
 
     after do
-      ::ActiveRemote::Cached.default_options({})
+      ::ActiveRemote::Cached.default_options_overwrite({})
     end
 
     it 'overrides the default options with cached_finder options for the fetch call' do
@@ -232,7 +232,7 @@ describe SearchMethodClass do
     end
 
     after do
-      ::ActiveRemote::Cached.default_options({})
+      ::ActiveRemote::Cached.default_options_overwrite({})
     end
 
     it 'and_return results when present' do
@@ -307,7 +307,7 @@ describe SearchMethodClass do
     end
 
     after do
-      ::ActiveRemote::Cached.default_options({})
+      ::ActiveRemote::Cached.default_options_overwrite({})
     end
 
     it 'calls the underlying method with params in correct order' do

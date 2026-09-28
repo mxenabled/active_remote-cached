@@ -80,7 +80,25 @@ The default cache options used when interacting with the cache can be specified 
 ActiveRemote::Cached.default_options(:expires_in => 1.hour)
 ```
 
-In Rails apps, the :race_condition_ttl option defaults to 5 seconds.
+In Rails apps, the railtie sets `:expires_in` to 5 minutes and `:race_condition_ttl` to 5 seconds. Change them with `config.active_remote_cached.expires_in` and `config.active_remote_cached.race_condition_ttl`.
+
+`default_options` merges the given options into the current options. An initializer that adds one option keeps the railtie's TTL:
+
+```ruby
+# config/initializers/active_remote_cached.rb
+ActiveRemote::Cached.default_options(:active_remote_cached_replace_characters => true)
+ActiveRemote::Cached.default_options
+# => { :expires_in => 5.minutes, :race_condition_ttl => 5.seconds, :active_remote_cached_replace_characters => true }
+```
+
+To replace all the options, use `default_options_overwrite`. Pass an empty hash to clear them:
+
+```ruby
+ActiveRemote::Cached.default_options_overwrite(:expires_in => 1.hour)
+ActiveRemote::Cached.default_options_overwrite({})
+```
+
+Without `:expires_in`, a cached finder writes an entry that never expires.
 
 #### Local overrides
 
@@ -148,6 +166,30 @@ bundle exec appraisal clean
 CI runs this matrix on Ruby 3.1, Ruby 3.4, JRuby 9.4, and JRuby 10.0.
 `active_remote` 8.0 requires Ruby 3.2 or later. CI does not run that
 version on Ruby 3.1 or JRuby 9.4.
+
+## Upgrading from 1.2.0
+
+### default_options merges
+
+Before this change, each call to `default_options` replaced the options. In a
+Rails app, the railtie sets `:expires_in` and `:race_condition_ttl` before the
+app initializers run. An initializer that called `default_options` with other
+options removed the TTL, and every cached finder call with no `:expires_in`
+wrote an entry that never expired:
+
+```ruby
+# railtie:      { :expires_in => 5.minutes, :race_condition_ttl => 5.seconds }
+ActiveRemote::Cached.default_options(:active_remote_cached_replace_characters => true)
+# before:       { :active_remote_cached_replace_characters => true }
+# now:          { :expires_in => 5.minutes, :race_condition_ttl => 5.seconds, :active_remote_cached_replace_characters => true }
+```
+
+After the upgrade, an app like this gets a TTL again. Its finders call the
+remote service more often, because entries now expire.
+
+`default_options({})` no longer clears the options. Use
+`default_options_overwrite({})`. Use `default_options_overwrite` to keep the
+old replace behavior.
 
 ## Upgrading to 1.2.0
 

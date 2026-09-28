@@ -141,7 +141,7 @@ describe ExistMethodClass do
     end
 
     after do
-      ::ActiveRemote::Cached.default_options({})
+      ::ActiveRemote::Cached.default_options_overwrite({})
     end
 
     it 'returns false before the find cache key is written' do
@@ -186,7 +186,7 @@ describe ExistMethodClass do
     end
 
     after do
-      ::ActiveRemote::Cached.default_options({})
+      ::ActiveRemote::Cached.default_options_overwrite({})
     end
 
     it 'returns false before the search cache key is written' do
