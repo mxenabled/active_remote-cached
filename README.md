@@ -167,11 +167,11 @@ CI runs this matrix on Ruby 3.1, Ruby 3.4, JRuby 9.4, and JRuby 10.0.
 `active_remote` 8.0 requires Ruby 3.2 or later. CI does not run that
 version on Ruby 3.1 or JRuby 9.4.
 
-## Upgrading from 1.2.0
+## Upgrading to 1.3.0
 
 ### default_options merges
 
-Before this change, each call to `default_options` replaced the options. In a
+Before 1.3.0, each call to `default_options` replaced the options. In a
 Rails app, the railtie sets `:expires_in` and `:race_condition_ttl` before the
 app initializers run. An initializer that called `default_options` with other
 options removed the TTL, and every cached finder call with no `:expires_in`
