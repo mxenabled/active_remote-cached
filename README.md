@@ -194,6 +194,23 @@ CI runs this matrix on Ruby 3.1, Ruby 3.4, JRuby 9.4, and JRuby 10.0.
 `active_remote` 8.0 requires Ruby 3.2 or later. CI does not run that
 version on Ruby 3.1 or JRuby 9.4.
 
+## Upgrading to 1.4.0
+
+### Cache error handling
+
+1.4.0 adds `:handle_cache_error` and `:cache_error_proc` (see "Cache errors").
+Both are off by default, so an app that does not set them has no change.
+
+An app on the internal `0.3.0.rc2` release can move to 1.4.0 and keep its
+initializer. 1.4.0 does not add the rest of that release:
+
+- `0.3.0.rc2` `fetch` called `read`, then `write`. 1.4.0 keeps the provider
+  `fetch`, so `:race_condition_ttl` now works. Redis keeps each entry for
+  5 more minutes.
+- `0.3.0.rc2` passed only known options to the cache provider. 1.4.0 passes
+  every option except the two error options, as 1.3.0 does.
+- Every cache key changes (see "Upgrading to 1.2.0").
+
 ## Upgrading to 1.3.0
 
 ### default_options merges
