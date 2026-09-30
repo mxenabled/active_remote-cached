@@ -9,6 +9,10 @@ module ActiveRemote
       # calls on it.
       class InvalidCacheProvider < ::StandardError; end
 
+      # Options that control error handling here. They are not passed to the
+      # cache provider.
+      ERROR_HANDLING_OPTIONS = %i[handle_cache_error cache_error_proc].freeze
+
       attr_reader :cache_provider
 
       def initialize(new_cache_provider)
@@ -27,6 +31,9 @@ module ActiveRemote
       def delete(*args)
         nested_cache_provider.delete(*args)
         super
+      rescue StandardError => e
+        handle_or_reraise_cache_error(e)
+        nil
       end
 
       def enable_nested_caching!
@@ -39,34 +46,99 @@ module ActiveRemote
 
       def exist?(*args)
         nested_cache_provider.exist?(*args) || super
+      rescue StandardError => e
+        handle_or_reraise_cache_error(e)
+        false
       end
 
-      def fetch(name, options = {})
+      # An error from the block (the RPC call) always goes to the caller. Only
+      # an error from a cache provider goes to handle_or_reraise_cache_error.
+      # When that error is handled, the block value is returned without the
+      # cache, and the block runs at most once.
+      def fetch(name, options = {}, &block)
+        block_result = FetchBlockResult.new(block)
         provider_options = provider_fetch_options(options)
-        fetch_value = nested_cache_provider.fetch(name, provider_options) { super(name, provider_options) }
+        fetch_value = provider_fetch(name, provider_options, block && block_result)
 
         delete(name) if delete_after_fetch?(fetch_value, options, provider_options)
 
         fetch_value
+      rescue StandardError => e
+        raise if block_result.raised?(e)
+
+        handle_or_reraise_cache_error(e)
+        block_result.value
       end
 
       def read(*args)
         nested_cache_provider.read(*args) || super
+      rescue StandardError => e
+        handle_or_reraise_cache_error(e)
+        nil
       end
 
       def write(*args)
         nested_cache_provider.write(*args)
         super
+      rescue StandardError => e
+        handle_or_reraise_cache_error(e)
+        nil
       end
 
       private
 
       attr_reader :nested_cache_provider
 
+      # Runs the fetch block at most once, on the first call to #value, and
+      # keeps its value or its error.
+      class FetchBlockResult
+        def initialize(block)
+          @block = block
+        end
+
+        def value
+          run unless defined?(@value)
+          raise @error if @error
+
+          @value
+        end
+
+        def raised?(error)
+          !@error.nil? && @error.equal?(error)
+        end
+
+        private
+
+        def run
+          @value = @block&.call
+        rescue StandardError => e
+          @value = nil
+          @error = e
+        end
+      end
+      private_constant :FetchBlockResult
+
+      # Without a block, the provider gets no block, as before.
+      def provider_fetch(name, options, block_result)
+        provider_block = block_result && proc { block_result.value }
+
+        nested_cache_provider.fetch(name, options) do
+          cache_provider.fetch(name, options, &provider_block)
+        end
+      end
+
+      def handle_or_reraise_cache_error(error)
+        raise error unless ::ActiveRemote::Cached.default_options[:handle_cache_error]
+
+        error_proc = ::ActiveRemote::Cached.default_options[:cache_error_proc]
+        error_proc.call(error) if error_proc.respond_to?(:call)
+      end
+
       # :skip_nil tells the provider not to write a nil at all, which saves a
       # write and the delete that follows it. Only an ActiveSupport store is
       # known to honor the option.
       def provider_fetch_options(options)
+        options = options.except(*ERROR_HANDLING_OPTIONS)
         return options if options.fetch(:allow_nil, false)
         return options unless cache_provider.is_a?(::ActiveSupport::Cache::Store)
 

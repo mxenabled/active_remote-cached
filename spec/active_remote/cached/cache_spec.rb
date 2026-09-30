@@ -72,6 +72,11 @@ describe ::ActiveRemote::Cached::Cache do
       expect(cache_provider.exist?('key')).to eq(true)
     end
 
+    it 'does not persist anything on a miss with no block' do
+      expect(cache.fetch('key', :allow_nil => true)).to be_nil
+      expect(cache_provider.exist?('key')).to eq(false)
+    end
+
     it 'persists a value that is neither nil nor empty' do
       expect(cache.fetch('key') { [:record] }).to eq([:record])
       expect(cache_provider.exist?('key')).to eq(true)
@@ -122,6 +127,126 @@ describe ::ActiveRemote::Cached::Cache do
 
       expect(counting_provider.calls).to eq(%i[fetch write])
       expect(counting_provider.exist?('key')).to eq(true)
+    end
+  end
+
+  describe 'cache error handling' do
+    let(:failing_provider) do
+      Class.new(::ActiveSupport::Cache::MemoryStore) do
+        %i[delete exist? fetch read write].each do |method_name|
+          define_method(method_name) { |*| raise ::IOError, "#{method_name} failed" }
+        end
+      end.new
+    end
+    let(:cache) { ::ActiveRemote::Cached::Cache.new(failing_provider) }
+    let(:handled_errors) { [] }
+
+    after do
+      ::ActiveRemote::Cached.default_options_overwrite({})
+    end
+
+    context 'when :handle_cache_error is not set' do
+      it 'raises the provider error from each method' do
+        expect { cache.delete('key') }.to raise_error(::IOError, 'delete failed')
+        expect { cache.exist?('key') }.to raise_error(::IOError, 'exist? failed')
+        expect { cache.fetch('key') { :value } }.to raise_error(::IOError, 'fetch failed')
+        expect { cache.read('key') }.to raise_error(::IOError, 'read failed')
+        expect { cache.write('key', :value) }.to raise_error(::IOError, 'write failed')
+      end
+    end
+
+    context 'when :handle_cache_error is true' do
+      before do
+        ::ActiveRemote::Cached.default_options(
+          :handle_cache_error => true,
+          :cache_error_proc => lambda { |error| handled_errors << error.message }
+        )
+      end
+
+      it 'returns a cache miss from #read' do
+        expect(cache.read('key')).to be_nil
+        expect(handled_errors).to eq(['read failed'])
+      end
+
+      it 'returns false from #exist?' do
+        expect(cache.exist?('key')).to eq(false)
+        expect(handled_errors).to eq(['exist? failed'])
+      end
+
+      it 'returns nil from #write' do
+        expect(cache.write('key', :value)).to be_nil
+        expect(handled_errors).to eq(['write failed'])
+      end
+
+      it 'returns nil from #delete' do
+        expect(cache.delete('key')).to be_nil
+        expect(handled_errors).to eq(['delete failed'])
+      end
+
+      it 'returns the block value from #fetch when the provider fails before the block' do
+        calls = 0
+
+        expect(cache.fetch('key') { calls += 1 }).to eq(1)
+        expect(calls).to eq(1)
+        expect(handled_errors).to eq(['fetch failed'])
+      end
+
+      it 'does not call the block again when the provider fails after the block' do
+        provider = Class.new(::ActiveSupport::Cache::MemoryStore) do
+          def fetch(*)
+            yield
+            raise ::IOError, 'write after fetch failed'
+          end
+        end.new
+        cache = ::ActiveRemote::Cached::Cache.new(provider)
+        calls = 0
+
+        expect(cache.fetch('key') { calls += 1 }).to eq(1)
+        expect(calls).to eq(1)
+        expect(handled_errors).to eq(['write after fetch failed'])
+      end
+
+      it 'raises an error from the #fetch block, and does not handle it' do
+        cache = ::ActiveRemote::Cached::Cache.new(::ActiveSupport::Cache::MemoryStore.new)
+        not_found = ::ActiveRemote::RemoteRecordNotFound
+
+        expect { cache.fetch('key') { raise not_found } }.to raise_error(not_found)
+        expect(handled_errors).to be_empty
+      end
+
+      it 'raises an error from the #fetch block when the provider fails before the block' do
+        not_found = ::ActiveRemote::RemoteRecordNotFound
+
+        expect { cache.fetch('key') { raise not_found } }.to raise_error(not_found)
+        expect(handled_errors).to eq(['fetch failed'])
+      end
+
+      it 'does not pass the error handling options to the provider' do
+        provider = ::ActiveSupport::Cache::MemoryStore.new
+        cache = ::ActiveRemote::Cached::Cache.new(provider)
+
+        expect(provider).to receive(:fetch).with('key', { :skip_nil => true }).and_call_original
+
+        cache.fetch('key', :handle_cache_error => true, :cache_error_proc => lambda {}) { :value }
+      end
+
+      it 'handles the error without a :cache_error_proc' do
+        ::ActiveRemote::Cached.default_options_overwrite(:handle_cache_error => true)
+
+        expect(cache.read('key')).to be_nil
+      end
+    end
+
+    context 'when :handle_cache_error is false' do
+      it 'raises the error and does not call :cache_error_proc' do
+        ::ActiveRemote::Cached.default_options(
+          :handle_cache_error => false,
+          :cache_error_proc => lambda { |error| handled_errors << error.message }
+        )
+
+        expect { cache.read('key') }.to raise_error(::IOError, 'read failed')
+        expect(handled_errors).to be_empty
+      end
     end
   end
 

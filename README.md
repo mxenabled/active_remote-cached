@@ -100,6 +100,33 @@ ActiveRemote::Cached.default_options_overwrite({})
 
 Without `:expires_in`, a cached finder writes an entry that never expires.
 
+#### Cache errors
+
+By default, an error from the cache provider goes to the caller. To make a
+cache error act as a cache miss, set `:handle_cache_error`:
+
+```ruby
+# config/initializers/active_remote_cached.rb
+ActiveRemote::Cached.default_options(
+  :handle_cache_error => true,
+  :cache_error_proc => lambda { |error| Rails.logger.error(error) }
+)
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `:handle_cache_error` | not set (off) | When true, a cache error does not go to the caller. `read` and `write` return nil, `exist?` returns false, `delete` returns nil, and `fetch` calls the block without the cache. |
+| `:cache_error_proc` | not set | A callable that receives the cache error. It runs only when `:handle_cache_error` is true. |
+
+The library reads these two options from `default_options` only, and does not
+pass them to the cache provider. An error from the `fetch` block (for example,
+`ActiveRemote::RemoteRecordNotFound` from a bang finder, or an RPC error) always
+goes to the caller. The block runs at most once for each `fetch`.
+
+`ActiveSupport::Cache::RedisCacheStore` already catches Redis connection errors
+and sends them to its own `:error_handler`. These options also catch the errors
+that the store does not catch, for example an entry that fails to deserialize.
+
 #### Local overrides
 
 Each finder as takes an optional options hash that will override the options passed to the caching provider (override from the global defaults setup for ActiveRemote::Cached)

@@ -164,6 +164,36 @@ describe ::ActiveRemote::Cached do
     end
   end
 
+  describe 'a cached finder when the cache provider fails' do
+    let(:failing_provider) do
+      Class.new(HashCache) do
+        def fetch(*)
+          raise ::IOError, 'cache is down'
+        end
+      end.new
+    end
+
+    before do
+      ::ActiveRemote::Cached.cache(failing_provider)
+    end
+
+    it 'raises the error by default' do
+      expect { ConfigurationClass.cached_find_by_guid(:guid) }.to raise_error(::IOError, 'cache is down')
+    end
+
+    it 'calls the finder and the error proc when :handle_cache_error is true' do
+      errors = []
+      ::ActiveRemote::Cached.default_options(
+        :handle_cache_error => true,
+        :cache_error_proc => lambda { |error| errors << error }
+      )
+
+      expect(ConfigurationClass.cached_find_by_guid(:guid)).to eq(:find_result)
+      expect(ConfigurationClass.cached_search_by_guid(:guid)).to eq([:search_result])
+      expect(errors.map(&:message)).to eq(['cache is down', 'cache is down'])
+    end
+  end
+
   describe 'RUBY_AND_ACTIVE_SUPPORT_VERSION' do
     it 'prefixes every cache key' do
       expect(::ActiveRemote::Cached.cache).to receive(:fetch).with(
