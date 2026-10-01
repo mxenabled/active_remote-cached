@@ -206,12 +206,14 @@ describe ::ActiveRemote::Cached::Cache do
         expect(handled_errors).to eq(['write after fetch failed'])
       end
 
-      it 'raises an error from the #fetch block, and does not handle it' do
-        cache = ::ActiveRemote::Cached::Cache.new(::ActiveSupport::Cache::MemoryStore.new)
-        not_found = ::ActiveRemote::RemoteRecordNotFound
+      it 'raises an error from the #fetch block, does not handle it, and does not cache it' do
+        provider = ::ActiveSupport::Cache::MemoryStore.new
+        cache = ::ActiveRemote::Cached::Cache.new(provider)
+        rpc_error = ::ActiveRemote::ActiveRemoteError
 
-        expect { cache.fetch('key') { raise not_found } }.to raise_error(not_found)
+        expect { cache.fetch('key') { raise rpc_error, 'rpc failed' } }.to raise_error(rpc_error)
         expect(handled_errors).to be_empty
+        expect(provider.exist?('key')).to eq(false)
       end
 
       it 'raises an error from the #fetch block when the provider fails before the block' do

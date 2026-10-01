@@ -103,7 +103,9 @@ Without `:expires_in`, a cached finder writes an entry that never expires.
 #### Cache errors
 
 By default, an error from the cache provider goes to the caller. To make a
-cache error act as a cache miss, set `:handle_cache_error`:
+cache error act as a cache miss, set `:handle_cache_error`. A cache outage then
+does not stop the finders: each call goes to the remote service. This
+increases the load on that service until the cache comes back.
 
 ```ruby
 # config/initializers/active_remote_cached.rb
@@ -121,7 +123,8 @@ ActiveRemote::Cached.default_options(
 The library reads these two options from `default_options` only, and does not
 pass them to the cache provider. An error from the `fetch` block (for example,
 `ActiveRemote::RemoteRecordNotFound` from a bang finder, or an RPC error) always
-goes to the caller. The block runs at most once for each `fetch`.
+goes to the caller, and the library never caches it. The block runs at most
+once for each `fetch`.
 
 `ActiveSupport::Cache::RedisCacheStore` already catches Redis connection errors
 and sends them to its own `:error_handler`. These options also catch the errors

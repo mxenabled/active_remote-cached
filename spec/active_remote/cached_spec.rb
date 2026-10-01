@@ -164,6 +164,21 @@ describe ::ActiveRemote::Cached do
     end
   end
 
+  describe 'a cached finder when the RPC call fails' do
+    it 'raises the error and does not cache it, with or without :handle_cache_error' do
+      provider = HashCache.new
+      ::ActiveRemote::Cached.cache(provider)
+      allow(ConfigurationClass).to receive(:find).and_raise(::ActiveRemote::ActiveRemoteError, 'rpc failed')
+
+      [false, true].each do |handle|
+        ::ActiveRemote::Cached.default_options(:handle_cache_error => handle)
+
+        expect { ConfigurationClass.cached_find_by_guid(:guid) }.to raise_error(::ActiveRemote::ActiveRemoteError)
+        expect(provider).to be_empty
+      end
+    end
+  end
+
   describe 'a cached finder when the cache provider fails' do
     let(:failing_provider) do
       Class.new(HashCache) do
