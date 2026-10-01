@@ -232,6 +232,35 @@ describe ::ActiveRemote::Cached::Cache do
         cache.fetch('key', :handle_cache_error => true, :cache_error_proc => lambda {}) { :value }
       end
 
+      it 'returns the block value when :cache_error_proc raises' do
+        ::ActiveRemote::Cached.default_options(:cache_error_proc => lambda { |_| raise 'notifier down' })
+        provider = Class.new(::ActiveSupport::Cache::MemoryStore) do
+          def fetch(*)
+            yield
+            raise ::IOError, 'write after fetch failed'
+          end
+        end.new
+        cache = ::ActiveRemote::Cached::Cache.new(provider)
+
+        expect { expect(cache.fetch('key') { :value }).to eq(:value) }
+          .to output(/ignored an error from :cache_error_proc: RuntimeError: notifier down/).to_stderr
+      end
+
+      it 'does not report a block error that the provider wraps in a new error' do
+        provider = Class.new(::ActiveSupport::Cache::MemoryStore) do
+          def fetch(*)
+            yield
+          rescue StandardError => e
+            raise ::IOError, "wrapped #{e.class}"
+          end
+        end.new
+        cache = ::ActiveRemote::Cached::Cache.new(provider)
+        not_found = ::ActiveRemote::RemoteRecordNotFound
+
+        expect { cache.fetch('key') { raise not_found } }.to raise_error(not_found)
+        expect(handled_errors).to be_empty
+      end
+
       it 'handles the error without a :cache_error_proc' do
         ::ActiveRemote::Cached.default_options_overwrite(:handle_cache_error => true)
 
@@ -239,7 +268,70 @@ describe ::ActiveRemote::Cached::Cache do
       end
     end
 
+    context 'with nested caching' do
+      let(:backing_provider) { ::ActiveSupport::Cache::MemoryStore.new }
+      let(:cache) do
+        ::ActiveRemote::Cached::Cache.new(backing_provider).tap(&:enable_nested_caching!)
+      end
+      let(:nested_provider) { cache.send(:nested_cache_provider) }
+
+      before do
+        ::ActiveRemote::Cached.default_options(
+          :handle_cache_error => true,
+          :cache_error_proc => lambda { |error| handled_errors << error.message }
+        )
+        %i[delete exist? fetch read write].each do |method_name|
+          allow(nested_provider).to receive(method_name).and_raise(::IOError, "nested #{method_name} failed")
+        end
+      end
+
+      it 'still writes to and deletes from the cache provider when the nested cache fails' do
+        cache.write('key', 'value')
+        expect(backing_provider.read('key')).to eq('value')
+
+        cache.delete('key')
+        expect(backing_provider.exist?('key')).to eq(false)
+        expect(handled_errors).to eq(['nested write failed', 'nested delete failed'])
+      end
+
+      it 'still reads from the cache provider when the nested cache fails' do
+        backing_provider.write('key', 'value')
+
+        expect(cache.read('key')).to eq('value')
+        expect(cache.exist?('key')).to eq(true)
+      end
+
+      it 'still fetches through the cache provider when the nested cache fails' do
+        calls = 0
+
+        expect(cache.fetch('key') { calls += 1 }).to eq(1)
+        expect(cache.fetch('key') { calls += 1 }).to eq(1)
+        expect(calls).to eq(1)
+        expect(handled_errors).to eq(['nested fetch failed', 'nested fetch failed'])
+      end
+
+      it 'raises a block error from inside the nested fetch, and does not report it' do
+        allow(nested_provider).to receive(:fetch).and_call_original
+        not_found = ::ActiveRemote::RemoteRecordNotFound
+
+        expect { cache.fetch('key') { raise not_found } }.to raise_error(not_found)
+        expect(handled_errors).to be_empty
+      end
+    end
+
     context 'when :handle_cache_error is false' do
+      it 'returns the fetched value when the cleanup delete fails' do
+        ::ActiveRemote::Cached.default_options(:handle_cache_error => false)
+        provider = Class.new(::ActiveSupport::Cache::MemoryStore) do
+          def delete(*)
+            raise ::IOError, 'delete failed'
+          end
+        end.new
+        cache = ::ActiveRemote::Cached::Cache.new(provider)
+
+        expect(cache.fetch('key') { [] }).to eq([])
+      end
+
       it 'raises the error and does not call :cache_error_proc' do
         ::ActiveRemote::Cached.default_options(
           :handle_cache_error => false,
