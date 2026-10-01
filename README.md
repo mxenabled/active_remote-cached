@@ -100,6 +100,42 @@ ActiveRemote::Cached.default_options_overwrite({})
 
 Without `:expires_in`, a cached finder writes an entry that never expires.
 
+#### Cache errors
+
+By default, an error from the cache provider goes to the caller. To make a
+cache error act as a cache miss, set `:handle_cache_error`. A cache outage then
+does not stop the finders: each call goes to the remote service. This
+increases the load on that service until the cache comes back.
+
+```ruby
+# config/initializers/active_remote_cached.rb
+ActiveRemote::Cached.default_options(
+  :handle_cache_error => true,
+  :cache_error_proc => lambda { |error| Rails.logger.error(error) }
+)
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `:handle_cache_error` | not set (off) | When true, a cache error does not go to the caller. `read` and `write` return nil, `exist?` returns false, `delete` returns nil, and `fetch` calls the block without the cache. |
+| `:cache_error_proc` | not set | A callable that receives the cache error. It runs only when `:handle_cache_error` is true. If the proc raises, the library writes a warning to stderr, and the call continues. |
+
+These two options apply only in `ActiveRemote::Cached.default_options`. A value
+in a finder declaration or in a finder call has no effect, and the library does
+not pass it to the cache provider.
+
+With nested caching, the nested cache and the cache provider each handle their
+own errors. An error in the nested cache does not skip the cache provider.
+
+An error from the `fetch` block (for example,
+`ActiveRemote::RemoteRecordNotFound` from a bang finder, or an RPC error) always
+goes to the caller, and the library never caches it. The block runs at most
+once for each `fetch`.
+
+`ActiveSupport::Cache::RedisCacheStore` already catches Redis connection errors
+and sends them to its own `:error_handler`. These options also catch the errors
+that the store does not catch, for example an entry that fails to deserialize.
+
 #### Local overrides
 
 Each finder as takes an optional options hash that will override the options passed to the caching provider (override from the global defaults setup for ActiveRemote::Cached)
@@ -166,6 +202,32 @@ bundle exec appraisal clean
 CI runs this matrix on Ruby 3.1, Ruby 3.4, JRuby 9.4, and JRuby 10.0.
 `active_remote` 8.0 requires Ruby 3.2 or later. CI does not run that
 version on Ruby 3.1 or JRuby 9.4.
+
+## Upgrading to 1.4.0
+
+### Cache error handling
+
+1.4.0 adds `:handle_cache_error` and `:cache_error_proc` (see "Cache errors").
+Both are off by default.
+
+### The cleanup delete in fetch no longer raises
+
+When `fetch` gets a nil or empty value (without `:allow_nil` or
+`:allow_empty`), it deletes the entry. Before 1.4.0, an error from that delete
+went to the caller, and the caller lost the value from the remote service.
+In 1.4.0, `fetch` ignores that error and returns the value. The nil or empty
+entry stays in the cache until its TTL ends. This applies with or without
+`:handle_cache_error`.
+
+An app on the internal `0.3.0.rc2` release can move to 1.4.0 and keep its
+initializer. 1.4.0 does not add the rest of that release:
+
+- `0.3.0.rc2` `fetch` called `read`, then `write`. 1.4.0 keeps the provider
+  `fetch`, so `:race_condition_ttl` now works. Redis keeps each entry for
+  5 more minutes.
+- `0.3.0.rc2` passed only known options to the cache provider. 1.4.0 passes
+  every option except the two error options, as 1.3.0 does.
+- Every cache key changes (see "Upgrading to 1.2.0").
 
 ## Upgrading to 1.3.0
 
