@@ -29,11 +29,10 @@ module ActiveRemote
       end
 
       def delete(*args)
-        nested_cache_provider.delete(*args)
-        super
-      rescue StandardError => e
-        handle_or_reraise_cache_error(e)
-        nil
+        failsafe do
+          nested_cache_provider.delete(*args)
+          super
+        end
       end
 
       def enable_nested_caching!
@@ -45,10 +44,7 @@ module ActiveRemote
       end
 
       def exist?(*args)
-        nested_cache_provider.exist?(*args) || super
-      rescue StandardError => e
-        handle_or_reraise_cache_error(e)
-        false
+        failsafe(:returning => false) { nested_cache_provider.exist?(*args) || super }
       end
 
       # An error from the block (the RPC call) always goes to the caller. Only
@@ -58,7 +54,7 @@ module ActiveRemote
       def fetch(name, options = {}, &block)
         block_result = FetchBlockResult.new(block)
         provider_options = provider_fetch_options(options)
-        fetch_value = provider_fetch(name, provider_options, block && block_result)
+        fetch_value = provider_fetch(name, provider_options, &block_result.to_block)
 
         delete(name) if delete_after_fetch?(fetch_value, options, provider_options)
 
@@ -71,18 +67,14 @@ module ActiveRemote
       end
 
       def read(*args)
-        nested_cache_provider.read(*args) || super
-      rescue StandardError => e
-        handle_or_reraise_cache_error(e)
-        nil
+        failsafe { nested_cache_provider.read(*args) || super }
       end
 
       def write(*args)
-        nested_cache_provider.write(*args)
-        super
-      rescue StandardError => e
-        handle_or_reraise_cache_error(e)
-        nil
+        failsafe do
+          nested_cache_provider.write(*args)
+          super
+        end
       end
 
       private
@@ -97,34 +89,43 @@ module ActiveRemote
         end
 
         def value
-          run unless defined?(@value)
+          run unless @ran
           raise @error if @error
 
           @value
         end
 
+        # The block to give the provider: nil when fetch got no block, so the
+        # provider gets no block either. A proc, because the provider yields
+        # the key and #value takes no argument.
+        def to_block
+          proc { value } if @block
+        end
+
         def raised?(error)
-          !@error.nil? && @error.equal?(error)
+          @error.equal?(error)
         end
 
         private
 
         def run
+          @ran = true
           @value = @block&.call
         rescue StandardError => e
-          @value = nil
           @error = e
         end
       end
       private_constant :FetchBlockResult
 
-      # Without a block, the provider gets no block, as before.
-      def provider_fetch(name, options, block_result)
-        provider_block = block_result && proc { block_result.value }
+      def provider_fetch(name, options, &block)
+        nested_cache_provider.fetch(name, options) { cache_provider.fetch(name, options, &block) }
+      end
 
-        nested_cache_provider.fetch(name, options) do
-          cache_provider.fetch(name, options, &provider_block)
-        end
+      def failsafe(returning: nil)
+        yield
+      rescue StandardError => e
+        handle_or_reraise_cache_error(e)
+        returning
       end
 
       def handle_or_reraise_cache_error(error)
